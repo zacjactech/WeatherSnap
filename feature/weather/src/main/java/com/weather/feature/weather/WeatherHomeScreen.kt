@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -663,7 +664,7 @@ private fun WeatherSnapBottomNav(
                 }
             )
             BottomNavItem(
-                icon = { Icon(Icons.Default.List, contentDescription = "Reports", tint = it) },
+                icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Reports", tint = it) },
                 label = "Reports",
                 isSelected = selectedTab == 2,
                 onClick = { 
