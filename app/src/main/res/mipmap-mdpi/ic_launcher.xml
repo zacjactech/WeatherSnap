@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    
+    <!-- Background -->
+    <path
+        android:fillColor="#0e1323"
+        android:pathData="M0,0h48v48h-48z"/>
+    
+    <!-- Cloud -->
+    <path
+        android:fillColor="#a4c9ff"
+        android:pathData="M24,12c-4,0 -7,3 -8,7c0,0 -1,0 -1,0c-2,0 -4,2 -4,4c0,2 2,4 4,4h16c3,0 5,-2 5,-5c0,-3 -2,-5 -5,-5c0,0 -1,0 -1,0c0,-4 -3,-8 -7,-8z"/>
+    
+    <!-- Sun -->
+    <path
+        android:fillColor="#ffb951"
+        android:pathData="M32,18a3,3 0,1 1,-6 0a3,3 0,1 1,6 0"/>
+    
+    <!-- W letter -->
+    <path
+        android:fillColor="#dee1f9"
+        android:pathData="M16,30 L18,36 L20,33 L22,36 L24,33 L26,36 L28,30"
+        android:strokeWidth="1.5"
+        android:strokeColor="#dee1f9"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+</vector>

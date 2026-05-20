@@ -1,0 +1,888 @@
+package com.weather.feature.report
+
+import android.graphics.BitmapFactory
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.weather.core.designsystem.theme.*
+import com.weather.core.model.WeatherSnap
+import com.weather.core.model.WeatherTelemetry
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+// Self-contained high-fidelity custom ImageVectors for full compile-safety
+val SaveIcon: ImageVector
+    @Composable
+    get() = remember {
+        ImageVector.Builder(
+            name = "Save",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).path(fill = SolidColor(Color.Black)) {
+            moveTo(17f, 3f)
+            lineTo(5f, 3f)
+            curveTo(3.9f, 3f, 3f, 3.9f, 3f, 5f)
+            verticalLineTo(19f)
+            curveTo(3f, 20.1f, 3.9f, 21f, 5f, 21f)
+            horizontalLineTo(19f)
+            curveTo(20.1f, 21f, 21f, 20.1f, 21f, 19f)
+            verticalLineTo(7f)
+            lineTo(17f, 3f)
+            close()
+            moveTo(12f, 19f)
+            curveTo(10.3f, 19f, 9f, 17.7f, 9f, 16f)
+            curveTo(9f, 14.3f, 10.3f, 13f, 12f, 13f)
+            curveTo(13.7f, 13f, 15f, 14.3f, 15f, 16f)
+            curveTo(15f, 17.7f, 13.7f, 19f, 12f, 19f)
+            close()
+            moveTo(15f, 9f)
+            horizontalLineTo(5f)
+            verticalLineTo(5f)
+            horizontalLineTo(15f)
+            verticalLineTo(9f)
+            close()
+        }.build()
+    }
+
+val UploadIcon: ImageVector
+    @Composable
+    get() = remember {
+        ImageVector.Builder(
+            name = "Upload",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).path(fill = SolidColor(Color.Black)) {
+            moveTo(19.35f, 10.04f)
+            curveTo(18.67f, 6.59f, 15.64f, 4f, 12f, 4f)
+            curveTo(9.11f, 4f, 6.6f, 5.64f, 5.35f, 8.04f)
+            curveTo(2.34f, 8.36f, 0f, 10.91f, 0f, 14f)
+            curveTo(0f, 17.31f, 2.69f, 20f, 6f, 20f)
+            horizontalLineTo(19f)
+            curveTo(21.76f, 20f, 24f, 17.76f, 24f, 15f)
+            curveTo(24f, 12.36f, 21.95f, 10.22f, 19.35f, 10.04f)
+            close()
+            moveTo(14f, 13f)
+            verticalLineTo(17f)
+            horizontalLineTo(10f)
+            verticalLineTo(13f)
+            horizontalLineTo(7f)
+            lineTo(12f, 8f)
+            lineTo(17f, 13f)
+            horizontalLineTo(14f)
+            close()
+        }.build()
+    }
+
+val CameraIcon: ImageVector
+    @Composable
+    get() = remember {
+        ImageVector.Builder(
+            name = "Camera",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).path(fill = SolidColor(Color.Black)) {
+            moveTo(9f, 2f)
+            lineTo(7.17f, 4f)
+            horizontalLineTo(4f)
+            curveTo(2.9f, 4f, 2f, 2.9f, 2f, 4f)
+            verticalLineTo(18f)
+            curveTo(2f, 19.1f, 2.9f, 20f, 4f, 20f)
+            horizontalLineTo(20f)
+            curveTo(21.1f, 20f, 22f, 19.1f, 22f, 18f)
+            verticalLineTo(6f)
+            curveTo(22f, 4.9f, 21.1f, 4f, 20f, 4f)
+            horizontalLineTo(16.83f)
+            lineTo(15f, 2f)
+            horizontalLineTo(9f)
+            close()
+            moveTo(12f, 17f)
+            curveTo(9.24f, 17f, 7f, 14.76f, 7f, 12f)
+            curveTo(7f, 9.24f, 9.24f, 7f, 12f, 7f)
+            curveTo(14.76f, 7f, 17f, 9.24f, 17f, 12f)
+            curveTo(17f, 14.76f, 14.76f, 17f, 12f, 17f)
+            close()
+        }.build()
+    }
+
+val TagIcon: ImageVector
+    @Composable
+    get() = remember {
+        ImageVector.Builder(
+            name = "Tag",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).path(fill = SolidColor(Color.Black)) {
+            moveTo(21.41f, 11.58f)
+            lineTo(12.42f, 2.58f)
+            curveTo(12.05f, 2.22f, 11.55f, 2f, 11f, 2f)
+            horizontalLineTo(4f)
+            curveTo(2.9f, 2f, 2f, 2.9f, 2f, 4f)
+            verticalLineTo(11f)
+            curveTo(2f, 11.55f, 2.22f, 12.05f, 2.59f, 12.42f)
+            lineTo(11.59f, 21.42f)
+            curveTo(12.37f, 22.2f, 13.63f, 22.2f, 14.41f, 21.41f)
+            lineTo(21.41f, 14.41f)
+            curveTo(22.2f, 13.63f, 22.2f, 12.37f, 21.41f, 11.58f)
+            close()
+            moveTo(6.5f, 8f)
+            curveTo(5.67f, 8f, 5f, 7.33f, 5f, 6.5f)
+            curveTo(5f, 5.67f, 5.67f, 5f, 6.5f, 5f)
+            curveTo(7.33f, 5f, 8f, 5.67f, 8f, 6.5f)
+            curveTo(8f, 7.33f, 7.33f, 8f, 6.5f, 8f)
+            close()
+        }.build()
+    }
+
+val MicIcon: ImageVector
+    @Composable
+    get() = remember {
+        ImageVector.Builder(
+            name = "Mic",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).path(fill = SolidColor(Color.Black)) {
+            moveTo(12f, 14f)
+            curveTo(13.66f, 14f, 15f, 12.66f, 15f, 11f)
+            verticalLineTo(5f)
+            curveTo(15f, 3.34f, 13.66f, 2f, 12f, 2f)
+            curveTo(10.34f, 2f, 9f, 3.34f, 9f, 5f)
+            verticalLineTo(11f)
+            curveTo(9f, 12.66f, 10.34f, 14f, 12f, 14f)
+            close()
+            moveTo(17f, 11f)
+            curveTo(17f, 13.8f, 14.7f, 16f, 12f, 16f)
+            curveTo(9.3f, 16f, 7f, 13.8f, 7f, 11f)
+            horizontalLineTo(5f)
+            curveTo(5f, 14.5f, 7.72f, 17.4f, 11f, 17.9f)
+            verticalLineTo(21f)
+            horizontalLineTo(13f)
+            verticalLineTo(17.9f)
+            curveTo(16.28f, 17.4f, 19f, 14.5f, 19f, 11f)
+            horizontalLineTo(17f)
+            close()
+        }.build()
+    }
+
+val CodeIcon: ImageVector
+    @Composable
+    get() = remember {
+        ImageVector.Builder(
+            name = "Code",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).path(fill = SolidColor(Color.Black)) {
+            moveTo(9.4f, 16.6f)
+            lineTo(4.8f, 12f)
+            lineTo(9.4f, 7.4f)
+            lineTo(8f, 6f)
+            lineTo(2f, 12f)
+            lineTo(8f, 18f)
+            lineTo(9.4f, 16.6f)
+            close()
+            moveTo(14.6f, 16.6f)
+            lineTo(19.2f, 12f)
+            lineTo(14.6f, 7.4f)
+            lineTo(16f, 6f)
+            lineTo(22f, 12f)
+            lineTo(16f, 18f)
+            lineTo(14.6f, 16.6f)
+            close()
+        }.build()
+    }
+
+val WifiIcon: ImageVector
+    @Composable
+    get() = remember {
+        ImageVector.Builder(
+            name = "Wifi",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).path(fill = SolidColor(Color.Black)) {
+            moveTo(12f, 21f)
+            lineTo(22.8f, 7.6f)
+            curveTo(22.3f, 7.2f, 17.9f, 3f, 12f, 3f)
+            curveTo(6.1f, 3f, 1.7f, 7.2f, 1.2f, 7.6f)
+            lineTo(12f, 21f)
+            close()
+        }.build()
+    }
+
+val WindIcon: ImageVector
+    @Composable
+    get() = remember {
+        ImageVector.Builder(
+            name = "Wind",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).path(fill = SolidColor(Color.Black)) {
+            moveTo(2f, 12f)
+            horizontalLineTo(18f)
+            curveTo(19.7f, 12f, 21f, 10.7f, 21f, 9f)
+            curveTo(21f, 7.3f, 19.7f, 6f, 18f, 6f)
+            curveTo(16.8f, 6f, 15.8f, 6.7f, 15.3f, 7.7f)
+            lineTo(13.9f, 7f)
+            curveTo(14.6f, 5.2f, 16.2f, 4f, 18f, 4f)
+            curveTo(20.8f, 4f, 23f, 6.2f, 23f, 9f)
+            curveTo(23f, 11.8f, 20.8f, 14f, 18f, 14f)
+            horizontalLineTo(2f)
+            verticalLineTo(12f)
+            close()
+            moveTo(20f, 16f)
+            curveTo(18.3f, 16f, 17f, 17.3f, 17f, 19f)
+            curveTo(17f, 20.7f, 18.3f, 22f, 20f, 22f)
+            curveTo(21.2f, 22f, 22.2f, 21.3f, 22.7f, 20.3f)
+            lineTo(21.3f, 19.6f)
+            curveTo(21f, 20.2f, 20.5f, 20.6f, 20f, 20.6f)
+            curveTo(19.1f, 20.6f, 18.4f, 19.9f, 18.4f, 19f)
+            curveTo(18.4f, 18.1f, 19.1f, 17.4f, 20f, 17.4f)
+            horizontalLineTo(22f)
+            verticalLineTo(16f)
+            horizontalLineTo(20f)
+            close()
+        }.build()
+    }
+
+val DropletIcon: ImageVector
+    @Composable
+    get() = remember {
+        ImageVector.Builder(
+            name = "Droplet",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).path(fill = SolidColor(Color.Black)) {
+            moveTo(12f, 2.69f)
+            lineTo(7.56f, 7.12f)
+            curveTo(5.5f, 9.18f, 4.47f, 11.9f, 4.47f, 14.62f)
+            curveTo(4.47f, 18.78f, 7.84f, 22.15f, 12f, 22.15f)
+            curveTo(16.16f, 22.15f, 19.53f, 18.78f, 19.53f, 14.62f)
+            curveTo(19.53f, 11.9f, 18.5f, 9.18f, 16.44f, 7.12f)
+            lineTo(12f, 2.69f)
+            close()
+            moveTo(12f, 20.15f)
+            curveTo(8.96f, 20.15f, 6.47f, 17.66f, 6.47f, 14.62f)
+            curveTo(6.47f, 12.63f, 7.26f, 10.73f, 8.68f, 9.31f)
+            lineTo(12f, 5.99f)
+            lineTo(15.32f, 9.31f)
+            curveTo(16.74f, 10.73f, 17.53f, 12.63f, 17.53f, 14.62f)
+            curveTo(17.53f, 17.66f, 15.04f, 20.15f, 12f, 20.15f)
+            close()
+        }.build()
+    }
+
+@Composable
+fun CreateReportRoute(
+    viewModel: ReportViewModel = hiltViewModel(),
+    onNavigateToCamera: () -> Unit,
+    onNavigateBack: () -> Unit,
+    onReportSaved: () -> Unit
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    CreateReportScreen(
+        uiState = uiState,
+        onNotesChange = viewModel::updateNotes,
+        onAddPhotoClick = onNavigateToCamera,
+        onDraftClick = {
+            viewModel.saveDraft()
+        },
+        onTransmitClick = {
+            viewModel.submitSnap()
+        },
+        onNavigateBack = onNavigateBack,
+        onReportSaved = onReportSaved
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreateReportScreen(
+    uiState: ReportUiState,
+    onNotesChange: (String) -> Unit,
+    onAddPhotoClick: () -> Unit,
+    onDraftClick: () -> Unit,
+    onTransmitClick: () -> Unit,
+    onNavigateBack: () -> Unit,
+    onReportSaved: () -> Unit
+) {
+    LaunchedEffect(uiState) {
+        if (uiState is ReportUiState.Success) {
+            onReportSaved()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Create Weather Report", color = OnSurfaceColor, fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = OnSurfaceColor)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = SurfaceLowColor
+                )
+            )
+        },
+        containerColor = SurfaceLowColor // Main background shifts to SurfaceLowColor (#161b2b)
+    ) { paddingValues ->
+        when (uiState) {
+            is ReportUiState.Drafting -> {
+                DraftingContent(
+                    draft = uiState.draft,
+                    locationName = uiState.locationName,
+                    onNotesChange = onNotesChange,
+                    onAddPhotoClick = onAddPhotoClick,
+                    onDraftClick = onDraftClick,
+                    onTransmitClick = onTransmitClick,
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
+            is ReportUiState.Submitting -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(color = PrimaryColor)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Persisting Report...", color = OnSurfaceVariantColor)
+                    }
+                }
+            }
+            is ReportUiState.Error -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = WeatherSnapColors.Error, modifier = Modifier.size(48.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(uiState.message, color = WeatherSnapColors.Error)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = onTransmitClick) {
+                            Text("Retry")
+                        }
+                    }
+                }
+            }
+            else -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = PrimaryColor)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DraftingContent(
+    draft: WeatherSnap,
+    locationName: String?,
+    onNotesChange: (String) -> Unit,
+    onAddPhotoClick: () -> Unit,
+    onDraftClick: () -> Unit,
+    onTransmitClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Weather Snapshot Card
+            draft.telemetry?.let { telemetry ->
+                WeatherSnapshotCard(telemetry = telemetry, locationName = locationName)
+            }
+
+            // Photo Capture Area / Media Section
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "OBSERVATION MEDIA",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = OnSurfaceVariantColor,
+                        letterSpacing = 1.2.sp
+                    )
+                    Text(
+                        if (draft.photo != null) "1/3 Attached" else "0/3 Attached",
+                        fontSize = 11.sp,
+                        color = PrimaryColor
+                    )
+                }
+
+                val photo = draft.photo
+                if (photo != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(192.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(1.dp, OutlineVariantColor, RoundedCornerShape(12.dp))
+                            .background(SurfaceColor),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val bitmap = remember(photo.filePath) {
+                            try {
+                                BitmapFactory.decodeFile(photo.filePath)?.asImageBitmap()
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+                        if (bitmap != null) {
+                            Image(
+                                bitmap = bitmap,
+                                contentDescription = "Observation Photo",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(Icons.Default.Warning, contentDescription = null, tint = OnSurfaceVariantColor)
+                        }
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(192.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .drawBehind {
+                                val stroke = Stroke(
+                                    width = 2f,
+                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                                )
+                                drawRoundRect(
+                                    color = OutlineVariantColor,
+                                    style = stroke
+                                )
+                            }
+                            .clickable(onClick = onAddPhotoClick),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(WeatherSnapColors.SurfaceContainerHigh),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(CameraIcon, contentDescription = null, tint = PrimaryColor, modifier = Modifier.size(24.dp))
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text("Tap to Capture", fontSize = 14.sp, color = OnSurfaceColor, fontWeight = FontWeight.Medium)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text("or select from gallery", fontSize = 12.sp, color = OnSurfaceVariantColor)
+                        }
+                    }
+                }
+            }
+
+            // Notes Input Section with auto-save bar
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    "FIELD NOTES",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = OnSurfaceVariantColor,
+                    letterSpacing = 1.2.sp
+                )
+
+                var isNotesFocused by remember { mutableStateOf(false) }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(SurfaceColor)
+                        .border(
+                            width = 1.dp,
+                            color = if (isNotesFocused) WeatherSnapColors.Secondary else OutlineVariantColor,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp)
+                            .padding(16.dp)
+                    ) {
+                        BasicTextField(
+                            value = draft.notes,
+                            onValueChange = onNotesChange,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .onFocusChanged { isNotesFocused = it.isFocused },
+                            textStyle = TextStyle(
+                                color = OnSurfaceColor,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Normal
+                            ),
+                            decorationBox = { innerTextField ->
+                                Box(modifier = Modifier.fillMaxSize()) {
+                                    if (draft.notes.isEmpty()) {
+                                        Text(
+                                            text = "Describe specific atmospheric anomalies, ground conditions, or equipment status...",
+                                            color = OnSurfaceVariantColor.copy(alpha = 0.5f),
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                    innerTextField()
+                                }
+                            }
+                        )
+                    }
+
+                    // Auto-saving actions footer
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(WeatherSnapColors.SurfaceContainerHigh)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Icon(
+                                TagIcon,
+                                contentDescription = "Add tags",
+                                tint = OnSurfaceVariantColor,
+                                modifier = Modifier.size(18.dp).clickable { }
+                            )
+                            Icon(
+                                MicIcon,
+                                contentDescription = "Voice memo",
+                                tint = OnSurfaceVariantColor,
+                                modifier = Modifier.size(18.dp).clickable { }
+                            )
+                        }
+                        Text(
+                            "Auto-saving...",
+                            color = OnSurfaceVariantColor,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            // Telemetry Data Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, OutlineVariantColor, RoundedCornerShape(12.dp)),
+                colors = CardDefaults.cardColors(containerColor = SurfaceColor),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(CodeIcon, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(16.dp))
+                        Text(
+                            "TELEMETRY DATA",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = OnSurfaceVariantColor,
+                            letterSpacing = 1.2.sp
+                        )
+                    }
+
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Elevation", fontSize = 11.sp, color = OnSurfaceVariantColor)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text("1,440m", fontSize = 14.sp, color = OnSurfaceColor, fontWeight = FontWeight.Medium)
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Barometer", fontSize = 11.sp, color = OnSurfaceVariantColor)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text("1012 hPa", fontSize = 14.sp, color = OnSurfaceColor, fontWeight = FontWeight.Medium)
+                        }
+                    }
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Coordinates", fontSize = 11.sp, color = OnSurfaceVariantColor)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text("46.8523° N, 121.7603° W", fontSize = 14.sp, color = OnSurfaceColor, fontWeight = FontWeight.Medium)
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Network", fontSize = 11.sp, color = OnSurfaceVariantColor)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(WifiIcon, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(14.dp))
+                                Text("Satellite Link", fontSize = 14.sp, color = WeatherSnapColors.Secondary, fontWeight = FontWeight.Medium)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Mechanical Sticky Actions Bar at the bottom
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            SurfaceLowColor.copy(alpha = 0.9f),
+                            SurfaceLowColor
+                        )
+                    )
+                )
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // DRAFT (flex-1)
+                Button(
+                    onClick = onDraftClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp)
+                        .border(1.dp, OutlineVariantColor, RoundedCornerShape(8.dp)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = WeatherSnapColors.SurfaceContainerHigh,
+                        contentColor = OnSurfaceColor
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Icon(SaveIcon, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("DRAFT", fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                }
+
+                // TRANSMIT REPORT (flex-[2])
+                Button(
+                    onClick = onTransmitClick,
+                    modifier = Modifier
+                        .weight(2f)
+                        .height(52.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = WeatherSnapColors.PrimaryContainer,
+                        contentColor = WeatherSnapColors.Secondary
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Icon(UploadIcon, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("TRANSMIT REPORT", fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeatherSnapshotCard(
+    telemetry: WeatherTelemetry,
+    locationName: String?
+) {
+    val timeString = remember {
+        val sdf = SimpleDateFormat("HH:mm z", Locale.getDefault())
+        sdf.format(Date())
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, OutlineVariantColor, RoundedCornerShape(12.dp)),
+        colors = CardDefaults.cardColors(containerColor = SurfaceColor),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(16.dp))
+                    Text(
+                        "CURRENT CONDITIONS",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = OnSurfaceVariantColor,
+                        letterSpacing = 1.sp
+                    )
+                }
+                Text(
+                    timeString,
+                    fontSize = 11.sp,
+                    color = PrimaryColor,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            "${telemetry.temperatureCelsius.toInt()}°",
+                            fontSize = 36.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryColor
+                        )
+                        Text(
+                            "C",
+                            fontSize = 18.sp,
+                            color = OnSurfaceVariantColor.copy(alpha = 0.5f),
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        )
+                    }
+                    Text(
+                        locationName ?: "Mt. Rainier Base Camp",
+                        fontSize = 14.sp,
+                        color = OnSurfaceColor,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    // Wind telemetry chip
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50.dp))
+                            .background(WeatherSnapColors.SurfaceContainerHigh)
+                            .border(1.dp, OutlineVariantColor, RoundedCornerShape(50.dp))
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(WindIcon, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(14.dp))
+                        Text(
+                            "${telemetry.windSpeedKph.toInt()} km/h NW",
+                            fontSize = 11.sp,
+                            color = OnSurfaceColor,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    // Humidity telemetry chip
+                    telemetry.humidityPercentage?.let { humidity ->
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50.dp))
+                                .background(WeatherSnapColors.SurfaceContainerHigh)
+                                .border(1.dp, OutlineVariantColor, RoundedCornerShape(50.dp))
+                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(DropletIcon, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(14.dp))
+                            Text(
+                                "$humidity% RH",
+                                fontSize = 11.sp,
+                                color = OnSurfaceColor,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

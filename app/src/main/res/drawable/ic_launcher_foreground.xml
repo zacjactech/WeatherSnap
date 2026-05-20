@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Cloud shape -->
+    <path
+        android:fillColor="#a4c9ff"
+        android:pathData="M54,30c-8,0 -15,6 -17,14c-1,0 -2,1 -3,1c-5,0 -9,4 -9,9c0,5 4,9 9,9h36c6,0 11,-5 11,-11c0,-6 -5,-11 -11,-11c-1,0 -1,0 -2,0c1,-8 -6,-16 -14,-16z"/>
+    
+    <!-- Weather symbol (sun behind cloud) -->
+    <path
+        android:fillColor="#ffb951"
+        android:pathData="M72,45a6,6 0,1 1,-12 0a6,6 0,1 1,12 0"/>
+    <path
+        android:fillColor="#ffb951"
+        android:pathData="M72,33v4M72,53v4M62,45h4M78,45h4M65,37l3,-3M77,51l-3,3M65,53l3,3M77,39l-3,-3"
+        android:strokeWidth="2"
+        android:strokeColor="#ffb951"/>
+    
+    <!-- Text: W -->
+    <path
+        android:fillColor="#dee1f9"
+        android:pathData="M40,68 L44,78 L48,72 L52,78 L56,72 L60,78 L64,68"
+        android:strokeWidth="3"
+        android:strokeColor="#dee1f9"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+</vector>

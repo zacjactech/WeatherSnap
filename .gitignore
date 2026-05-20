@@ -1,0 +1,24 @@
+# Build outputs & caches recursively
+build/
+**/build/
+.gradle/
+.gradle-bin/
+
+# Local development credentials & paths
+local.properties
+.idea/
+*.iml
+
+# Ignore all VS Code configs except the MCP template
+.vscode/*
+!.vscode/mcp.json.template
+
+# Logs
+*.log
+
+# Large binaries & archives
+gradle-8.5-bin.zip
+
+# OS Files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Report Details - WeatherSnap</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&amp;family=Inter:wght@400;500&amp;family=Geist:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#0e1323",
+                        "on-primary": "#00315d",
+                        "error": "#ffb4ab",
+                        "on-background": "#dee1f9",
+                        "secondary": "#80d2e9",
+                        "on-tertiary-container": "#3c2500",
+                        "tertiary-container": "#c2841a",
+                        "on-secondary-fixed": "#001f26",
+                        "on-primary-container": "#002a51",
+                        "surface-variant": "#2f3446",
+                        "inverse-primary": "#0060ac",
+                        "outline-variant": "#414751",
+                        "outline": "#8b919d",
+                        "surface-container-high": "#25293a",
+                        "inverse-surface": "#dee1f9",
+                        "surface": "#0e1323",
+                        "primary": "#a4c9ff",
+                        "on-surface": "#dee1f9",
+                        "surface-bright": "#34394a",
+                        "on-tertiary-fixed": "#291800",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffddb3",
+                        "surface-dim": "#0e1323",
+                        "secondary-container": "#007084",
+                        "surface-container-highest": "#2f3446",
+                        "inverse-on-surface": "#2b3041",
+                        "tertiary": "#ffb951",
+                        "surface-container-lowest": "#080d1d",
+                        "surface-container": "#1a1f30",
+                        "surface-tint": "#a4c9ff",
+                        "on-tertiary-fixed-variant": "#633f00",
+                        "on-secondary-container": "#b3edff",
+                        "on-secondary-fixed-variant": "#004e5d",
+                        "on-primary-fixed": "#001c39",
+                        "surface-container-low": "#161b2b",
+                        "secondary-fixed-dim": "#80d2e9",
+                        "on-error": "#690005",
+                        "primary-fixed": "#d4e3ff",
+                        "tertiary-fixed-dim": "#ffb951",
+                        "on-tertiary": "#452b00",
+                        "primary-container": "#4d93e5",
+                        "on-primary-fixed-variant": "#004883",
+                        "on-secondary": "#003641",
+                        "on-surface-variant": "#c1c7d3",
+                        "error-container": "#93000a",
+                        "secondary-fixed": "#aeecff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "20px",
+                        "stack-sm": "8px",
+                        "stack-lg": "32px",
+                        "gutter": "12px",
+                        "unit-x": "4px",
+                        "margin-tablet": "32px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "display-temp-mobile": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "label-caps": ["Geist"],
+                        "body-lg": ["Inter"],
+                        "metadata": ["Geist"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "display-temp": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "display-temp-mobile": ["72px", { "lineHeight": "76px", "letterSpacing": "-0.04em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "metadata": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "display-temp": ["96px", { "lineHeight": "100px", "letterSpacing": "-0.04em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md min-h-screen selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top App Bar - Suppressed per rules for transactional/task-focused pages, but a custom back header is used -->
+<header class="sticky top-0 w-full z-50 flex justify-between items-center px-margin-mobile py-stack-md bg-surface/80 backdrop-blur-md">
+<button aria-label="Go back" class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors text-on-surface">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md text-primary tracking-tight">Observation Details</h1>
+<button aria-label="More options" class="w-12 h-12 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors text-on-surface">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</header>
+<main class="pb-32 md:pb-margin-tablet pb-[calc(env(safe-area-inset-bottom)+80px)]">
+<!-- Hero Image -->
+<section class="w-full h-72 md:h-96 relative">
+<img alt="Atmospheric capture" class="w-full h-full object-cover" data-alt="A dramatic photograph of a heavy thunderstorm rolling across an open prairie. The sky is dominated by deeply layered, dark, indigo-toned cumulonimbus clouds, contrasting with a sliver of bright, intense orange sunlight breaking through near the horizon. The lighting highlights the texture of the turbulent atmosphere, evoking a sense of raw power and cinematic scale typical of extreme weather events. The overall tone aligns with a high-fidelity, atmospheric dark-mode aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3IK13lKBCzXARi4O65Gn4FwfDACRr-MV5SreB4vTgx0iKy-BUnmGuqBeyr98cBm9wK-UgxIGXh7NwhFtMZpI8bXiD6ip7dAltyFgsKmMkGXm5gUOMNgu51P4AeUvtE-XO31Hm8azn6Kc5AinTNYP13sKjojiLRripG8lYmlLrN5ivCX12YTL8kkUOthbIIDnf_PV6XQNC4mq4UtyBUbrrH3ae0ox_c-se6Gx6UiRVlFzGr9HMzdgneXD4Q86FgLCRJtiTKDGoP4g"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent"></div>
+<div class="absolute bottom-0 left-0 right-0 p-margin-mobile flex justify-between items-end">
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="bg-[#FFB84D] text-[#3c2500] px-3 py-1 rounded-full font-label-caps text-label-caps inline-flex items-center">
+<span class="material-symbols-outlined text-[14px] mr-1">warning</span>
+                            SEVERE SQUALL
+                        </span>
+<span class="bg-surface-container/80 backdrop-blur text-on-surface px-3 py-1 rounded-full font-label-caps text-label-caps">VERIFIED</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-1">Sector Alpha-9</h2>
+<p class="font-metadata text-metadata text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+                        Oct 24, 2023 • 14:32 Local
+                    </p>
+</div>
+</div>
+</section>
+<div class="px-margin-mobile md:px-margin-tablet max-w-4xl mx-auto space-y-stack-lg mt-stack-md">
+<!-- Primary Data Bento -->
+<section class="grid grid-cols-2 md:grid-cols-4 gap-gutter">
+<!-- Temp Card -->
+<div class="col-span-2 bg-[#1A243A] border border-[#2A3652] rounded-xl p-stack-md relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-40 transition-opacity">
+<span class="material-symbols-outlined text-6xl">thermostat</span>
+</div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-2">Core Temp</h3>
+<div class="flex items-baseline gap-2">
+<span class="font-display-temp text-display-temp text-primary">14°</span>
+<span class="font-body-lg text-body-lg text-on-surface-variant">C</span>
+</div>
+<div class="mt-4 flex gap-4 font-metadata text-metadata">
+<span class="text-[#FFB84D] flex items-center"><span class="material-symbols-outlined text-[16px] mr-1">arrow_upward</span> 18°</span>
+<span class="text-secondary flex items-center"><span class="material-symbols-outlined text-[16px] mr-1">arrow_downward</span> 9°</span>
+</div>
+</div>
+<!-- Wind Card -->
+<div class="col-span-1 bg-[#1A243A] border border-[#2A3652] rounded-xl p-stack-md flex flex-col justify-between">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant">Wind (Gusts)</h3>
+<div>
+<span class="font-headline-md text-headline-md text-on-surface">65</span>
+<span class="font-metadata text-metadata text-on-surface-variant ml-1">km/h</span>
+</div>
+<div class="mt-2 flex items-center gap-1 text-secondary font-metadata text-metadata">
+<span class="material-symbols-outlined text-[18px]">explore</span> NW
+                    </div>
+</div>
+<!-- Pressure Card -->
+<div class="col-span-1 bg-[#1A243A] border border-[#2A3652] rounded-xl p-stack-md flex flex-col justify-between">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant">Pressure</h3>
+<div>
+<span class="font-headline-md text-headline-md text-on-surface">998</span>
+<span class="font-metadata text-metadata text-on-surface-variant ml-1">hPa</span>
+</div>
+<div class="mt-2 flex items-center gap-1 text-[#FFB84D] font-metadata text-metadata">
+<span class="material-symbols-outlined text-[18px]">trending_down</span> Falling
+                    </div>
+</div>
+</section>
+<!-- Field Notes Section -->
+<section class="bg-[#121A2D] rounded-xl p-stack-md border border-[#2A3652]">
+<div class="flex items-center gap-2 mb-stack-sm pb-2 border-b border-[#2A3652]">
+<span class="material-symbols-outlined text-primary">notes</span>
+<h3 class="font-label-caps text-label-caps text-on-surface">Field Observer Notes</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                    Rapid cloud development observed over the western ridge. Substantial vertical growth within a 15-minute window. Lightning activity increasing, primarily intra-cloud with occasional cloud-to-ground strikes. Humidity spike noted just prior to front arrival. Recommend shifting equipment to secondary hardened shelter.
+                </p>
+<div class="mt-stack-md pt-stack-sm border-t border-[#2A3652] flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden border border-outline-variant">
+<img alt="Observer Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsShRIi-Z2KFIvj_ylPbt_9e3mGMZDAf-cKgHOEoZh4kcPlrzUJmhXOXYIOk-OBsok4O8UwlJ1H1W8uA1CaOdG3ckuZ01mPadK1qZsPx1-SYH_yRjO5a3fXCglxm0XgBc-8TbnGPJBY64G3MIA4OD6LdSEnVdgsU-KFXBoRVgOxrcQSuLP7ljUb31oSEe_Ud8DuLWJw_lFma9qv1M-pw2f3m4SZDsiLHU5Mn_9QZXZT9ul0kfUoo17SQTfKzbMLqbP9ZlWFULHfYM"/>
+</div>
+<div>
+<p class="font-metadata text-metadata text-on-surface">Dr. Elena Rostova</p>
+<p class="font-metadata text-[12px] text-on-surface-variant">Lead Meteorologist</p>
+</div>
+</div>
+<button class="text-primary hover:text-primary-container transition-colors font-label-caps text-label-caps">
+                        EDIT LOG
+                    </button>
+</div>
+</section>
+<!-- Metadata List -->
+<section class="space-y-0 bg-[#1A243A] rounded-xl border border-[#2A3652] overflow-hidden">
+<div class="flex justify-between items-center p-stack-md border-b border-[#2A3652] hover:bg-surface-container-high transition-colors cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">satellite_alt</span>
+<span class="font-body-md text-body-md text-on-surface">Capture Device</span>
+</div>
+<span class="font-metadata text-metadata text-on-surface-variant">WS-Optics Pro X2</span>
+</div>
+<div class="flex justify-between items-center p-stack-md border-b border-[#2A3652] hover:bg-surface-container-high transition-colors cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">location_on</span>
+<span class="font-body-md text-body-md text-on-surface">Coordinates</span>
+</div>
+<span class="font-metadata text-metadata text-on-surface-variant">45.092° N, -110.871° W</span>
+</div>
+<div class="flex justify-between items-center p-stack-md border-b border-[#2A3652] hover:bg-surface-container-high transition-colors cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">altitude</span>
+<span class="font-body-md text-body-md text-on-surface">Elevation</span>
+</div>
+<span class="font-metadata text-metadata text-on-surface-variant">2,145 m MSL</span>
+</div>
+<div class="flex justify-between items-center p-stack-md hover:bg-surface-container-high transition-colors cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">visibility</span>
+<span class="font-body-md text-body-md text-on-surface">Visibility Range</span>
+</div>
+<span class="font-metadata text-metadata text-on-surface-variant">1.2 km</span>
+</div>
+</section>
+<!-- Actions -->
+<div class="flex gap-4 pt-stack-sm pb-stack-lg">
+<button class="flex-1 bg-[#4A90E2] text-[#F4F7FB] font-label-caps text-label-caps py-4 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined text-[18px]">share</span>
+                    BROADCAST ALERT
+                </button>
+<button aria-label="Save to archive" class="flex-none w-14 bg-transparent border border-[#2A3652] text-on-surface rounded-lg flex items-center justify-center hover:bg-surface-container-high active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined">bookmark_add</span>
+</button>
+</div>
+</div>
+</main>
+</body></html>

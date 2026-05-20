@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Camera - WeatherSnap</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&amp;family=Inter:wght@400&amp;family=Geist:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#0e1323",
+                        "on-primary": "#00315d",
+                        "error": "#ffb4ab",
+                        "on-background": "#dee1f9",
+                        "secondary": "#80d2e9",
+                        "on-tertiary-container": "#3c2500",
+                        "tertiary-container": "#c2841a",
+                        "on-secondary-fixed": "#001f26",
+                        "on-primary-container": "#002a51",
+                        "surface-variant": "#2f3446",
+                        "inverse-primary": "#0060ac",
+                        "outline-variant": "#414751",
+                        "outline": "#8b919d",
+                        "surface-container-high": "#25293a",
+                        "inverse-surface": "#dee1f9",
+                        "surface": "#0e1323",
+                        "primary": "#a4c9ff",
+                        "on-surface": "#dee1f9",
+                        "surface-bright": "#34394a",
+                        "on-tertiary-fixed": "#291800",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffddb3",
+                        "surface-dim": "#0e1323",
+                        "secondary-container": "#007084",
+                        "surface-container-highest": "#2f3446",
+                        "inverse-on-surface": "#2b3041",
+                        "tertiary": "#ffb951",
+                        "surface-container-lowest": "#080d1d",
+                        "surface-container": "#1a1f30",
+                        "surface-tint": "#a4c9ff",
+                        "on-tertiary-fixed-variant": "#633f00",
+                        "on-secondary-container": "#b3edff",
+                        "on-secondary-fixed-variant": "#004e5d",
+                        "on-primary-fixed": "#001c39",
+                        "surface-container-low": "#161b2b",
+                        "secondary-fixed-dim": "#80d2e9",
+                        "on-error": "#690005",
+                        "primary-fixed": "#d4e3ff",
+                        "tertiary-fixed-dim": "#ffb951",
+                        "on-tertiary": "#452b00",
+                        "primary-container": "#4d93e5",
+                        "on-primary-fixed-variant": "#004883",
+                        "on-secondary": "#003641",
+                        "on-surface-variant": "#c1c7d3",
+                        "error-container": "#93000a",
+                        "secondary-fixed": "#aeecff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "20px",
+                        "stack-sm": "8px",
+                        "stack-lg": "32px",
+                        "gutter": "12px",
+                        "unit-x": "4px",
+                        "margin-tablet": "32px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "display-temp-mobile": ["Hanken Grotesk"],
+                        "body-md": ["Inter"],
+                        "label-caps": ["Geist"],
+                        "body-lg": ["Inter"],
+                        "metadata": ["Geist"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "display-temp": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "display-temp-mobile": ["72px", { "lineHeight": "76px", "letterSpacing": "-0.04em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "metadata": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "display-temp": ["96px", { "lineHeight": "100px", "letterSpacing": "-0.04em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .viewfinder-corner {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            border: 2px solid #a4c9ff;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+        .viewfinder-corner.tl { top: 0; left: 0; border-right: none; border-bottom: none; }
+        .viewfinder-corner.tr { top: 0; right: 0; border-left: none; border-bottom: none; }
+        .viewfinder-corner.bl { bottom: 0; left: 0; border-right: none; border-top: none; }
+        .viewfinder-corner.br { bottom: 0; right: 0; border-left: none; border-top: none; }
+        
+        .shutter-btn {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: transparent;
+            border: 4px solid #dee1f9;
+            transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .shutter-btn::after {
+            content: '';
+            position: absolute;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #dee1f9;
+            transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .shutter-btn:active {
+            transform: scale(0.95);
+        }
+        .shutter-btn:active::after {
+            transform: scale(0.9);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background h-screen w-full overflow-hidden antialiased flex flex-col relative select-none">
+<!-- Camera Viewfinder Layer -->
+<div class="absolute inset-0 z-0 bg-surface-container-highest">
+<!-- Live Camera Preview Placeholder (simulated with a dark atmospheric image) -->
+<img alt="Camera viewfinder background" class="w-full h-full object-cover opacity-80" data-alt="A dark, dramatic wide-angle shot of a brooding, overcast sky above a rugged landscape, serving as a live camera preview. The atmosphere is intense and moody, suitable for high-precision environmental observation. The lighting is low and natural, emphasizing the deep grays and blues of the weather front, fitting the minimalist-atmospheric design system perfectly." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBuYU52g0poqNRIhabOEFkPSOjhNi4nEI1rsUAJ8TzdEs_in1w9fyFoTbHb1-ZtpyslnyBwPVgdL_kg5OwFIQLBttxSajT4fVjoRGPE2gBnCrUwKb4lafoGSdrWnZV6zJ6TrwU_mMeNNg_L3_O6RkS_kAKi1iKYgJbdzW4c5qxXLxDtSOk0S7ytPWNGYnWghdoETt8i6SjOBxYkLXHoTWGN1ImFsKGBLjjtvxgQvrLCcukFfYx8YS-8ow1jR69OfCot1YJl4KUOZQY"/>
+<!-- Viewfinder Overlay -->
+<div class="absolute inset-margin-mobile flex items-center justify-center pointer-events-none">
+<div class="relative w-full max-w-sm aspect-square md:aspect-video md:max-w-2xl">
+<div class="viewfinder-corner tl"></div>
+<div class="viewfinder-corner tr"></div>
+<div class="viewfinder-corner bl"></div>
+<div class="viewfinder-corner br"></div>
+<!-- Center reticle -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center opacity-50">
+<div class="w-[2px] h-full bg-primary absolute"></div>
+<div class="w-full h-[2px] bg-primary absolute"></div>
+</div>
+</div>
+</div>
+<!-- Technical Grid Overlay -->
+<div class="absolute inset-0 pointer-events-none opacity-20" style="background-image: linear-gradient(to right, #414751 1px, transparent 1px), linear-gradient(to bottom, #414751 1px, transparent 1px); background-size: 33.33% 33.33%;"></div>
+</div>
+<!-- Top Control Bar -->
+<header class="relative z-10 w-full flex justify-between items-center px-margin-mobile py-stack-md bg-gradient-to-b from-black/60 to-transparent">
+<button class="w-12 h-12 flex items-center justify-center rounded-full bg-surface-container/50 backdrop-blur-md border border-outline-variant text-on-surface hover:bg-surface-variant transition-colors active:scale-95">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+<div class="flex gap-gutter bg-surface-container/50 backdrop-blur-md rounded-full px-4 py-2 border border-outline-variant">
+<span class="font-metadata text-metadata text-primary">GPS: 45.42°N, 12.33°E</span>
+</div>
+<button class="w-12 h-12 flex items-center justify-center rounded-full bg-surface-container/50 backdrop-blur-md border border-outline-variant text-on-surface hover:bg-surface-variant transition-colors active:scale-95">
+<span class="material-symbols-outlined" data-icon="flash_off">flash_off</span>
+</button>
+</header>
+<!-- Main Canvas Space (Empty for viewfinder) -->
+<main class="flex-1 relative z-10"></main>
+<!-- Bottom Control Bar -->
+<footer class="relative z-10 w-full bg-gradient-to-t from-black/80 via-black/50 to-transparent pb-stack-lg pt-stack-lg px-margin-mobile flex flex-col items-center justify-end">
+<!-- Environment Context Chips -->
+<div class="flex gap-stack-sm mb-stack-lg overflow-x-auto w-full no-scrollbar px-margin-mobile -mx-margin-mobile snap-x">
+<div class="snap-center shrink-0 bg-surface-container/80 backdrop-blur-md border border-outline-variant rounded-full px-4 py-1.5 flex items-center gap-2 text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="thermostat">thermostat</span>
+<span class="font-label-caps text-label-caps tracking-wider">14°C</span>
+</div>
+<div class="snap-center shrink-0 bg-surface-container/80 backdrop-blur-md border border-outline-variant rounded-full px-4 py-1.5 flex items-center gap-2 text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-secondary" data-icon="air">air</span>
+<span class="font-label-caps text-label-caps tracking-wider">12 KM/H NE</span>
+</div>
+<div class="snap-center shrink-0 bg-surface-container/80 backdrop-blur-md border border-outline-variant rounded-full px-4 py-1.5 flex items-center gap-2 text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="water_drop">water_drop</span>
+<span class="font-label-caps text-label-caps tracking-wider">82% HUM</span>
+</div>
+</div>
+<!-- Camera Controls -->
+<div class="w-full flex items-center justify-between max-w-md mx-auto">
+<!-- Mode Selector -->
+<button class="w-12 h-12 flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="panorama">panorama</span>
+<span class="font-label-caps text-[10px] mt-1 opacity-80">PANO</span>
+</button>
+<!-- Shutter Button -->
+<button aria-label="Take Photo" class="shutter-btn" id="captureBtn"></button>
+<!-- Library/Recent -->
+<button class="w-12 h-12 rounded-lg border-2 border-outline-variant overflow-hidden hover:border-primary transition-colors active:scale-95">
+<img alt="Recent photo" class="w-full h-full object-cover" data-alt="A small thumbnail showing a recently captured photograph of a distant storm cell over an arid landscape. The tone is dark and muted, adhering to the atmospheric aesthetic of the application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxtgIM3mI8RXG-p-OPvOOrcJqoUztDgBjFTXThhveN0p_byzt5_c3dpTg3fbpFS_cWEdZorch_lsi0Y_0uE9EnobpyzMAs4lLCu7s5k5yZ-Ue7TqvOcKyLPuz4izNYZKhjbj5dgU4ogvTELRM-jR67oUbok7V4zTXQ6yUUvoYaiLfo2RwNUPlZrBCzgQOtxYOhsC40BIqI1n125RumnTMHVmZME_E7bGsJEWLBAMPfidkhdjC20tTjb02r0A3a6yeXGtOAuZYFWWE"/>
+</button>
+</div>
+<!-- Zoom Slider (Minimal) -->
+<div class="mt-stack-md flex items-center gap-4 w-full max-w-xs mx-auto">
+<span class="font-metadata text-[10px] text-on-surface-variant">1x</span>
+<div class="flex-1 h-1 bg-surface-container-highest rounded-full relative">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-primary rounded-full shadow-lg"></div>
+</div>
+<span class="font-metadata text-[10px] text-on-surface-variant">3x</span>
+</div>
+</footer>
+<!-- Note: BottomNavBar is intentionally suppressed on this task-focused screen per the Source of Truth Hierarchy. -->
+<script>
+        // Simple mechanical haptic feedback simulation
+        document.getElementById('captureBtn').addEventListener('click', function() {
+            if (navigator.vibrate) {
+                navigator.vibrate(50); // Short, sharp mechanical vibration
+            }
+            
+            // Visual feedback - shutter flash
+            const flash = document.createElement('div');
+            flash.className = 'absolute inset-0 bg-white z-[100] opacity-0 transition-opacity duration-150 pointer-events-none';
+            document.body.appendChild(flash);
+            
+            // Trigger animation
+            requestAnimationFrame(() => {
+                flash.style.opacity = '0.8';
+                setTimeout(() => {
+                    flash.style.opacity = '0';
+                    setTimeout(() => flash.remove(), 150);
+                }, 50);
+            });
+        });
+    </script>
+</body></html>
