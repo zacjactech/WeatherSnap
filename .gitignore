@@ -1,24 +1,57 @@
-# Build outputs & caches recursively
-build/
-**/build/
+# ==========================================
+# Gradle & Build Caches (Recursively)
+# ==========================================
 .gradle/
 .gradle-bin/
+build/
+**/build/
 
-# Local development credentials & paths
+# ==========================================
+# Security & Credentials (Crucial Protection)
+# ==========================================
+# Keystores and private signing keys
+*.jks
+*.keystore
+*.pepk
+*.p12
+*.pem
+*.key
+*.pkcs12
+
+# API keys, secrets, and environment configurations
+secrets.properties
 local.properties
-.idea/
-*.iml
+*google-services.json
+google-services.json
+GoogleService-Info.plist
+*.env
+*.env.*
+*.secret
 
-# Ignore all VS Code configs except the MCP template
+# ==========================================
+# IDE Configuration (Team & User Decoupling)
+# ==========================================
+# VS Code Configuration (ignoring all except the MCP template)
 .vscode/*
 !.vscode/mcp.json.template
 
-# Logs
+# IntelliJ IDEA / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+.navigation/
+navigation/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# ==========================================
+# Logs & System Clutter
+# ==========================================
 *.log
-
-# Large binaries & archives
-gradle-8.5-bin.zip
-
-# OS Files
 .DS_Store
 Thumbs.db
+desktop.ini
+*.swp
+*~
