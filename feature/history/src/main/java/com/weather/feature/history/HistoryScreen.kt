@@ -142,7 +142,6 @@ fun HistoryScreen(
                 HistoryTimelineList(
                     snaps = uiState.snaps,
                     onReportClick = onReportClick,
-                    onCreateReportClick = onCreateReportClick,
                     modifier = Modifier.padding(paddingValues),
                     responsive = responsive,
                     fontScale = fontScale
@@ -179,12 +178,22 @@ private fun EmptyHistoryState(
             Spacer(modifier = Modifier.height(responsive.sectionSpacing))
             Button(
                 onClick = onCreateReportClick,
-                modifier = Modifier.height(responsive.buttonHeight).fillMaxWidth(0.8f),
-                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = PrimaryColor)
+                modifier = Modifier
+                    .widthIn(max = 280.dp)
+                    .height(responsive.buttonHeight),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF4A90E2),
+                    contentColor = Color(0xFFF4F7FB)
+                ),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(responsive.buttonHeight / 2)
             ) {
-                Icon(Icons.Default.Add, contentDescription = null)
+                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(responsive.iconSize))
                 Spacer(modifier = Modifier.width(responsive.itemSpacing / 2))
-                Text("+ Create Report", fontWeight = FontWeight.Bold, color = Color.White)
+                Text(
+                    "CREATE REPORT",
+                    style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -205,7 +214,6 @@ private fun ErrorHistoryState(message: String, modifier: Modifier = Modifier, re
 private fun HistoryTimelineList(
     snaps: List<WeatherSnap>,
     onReportClick: (String) -> Unit,
-    onCreateReportClick: () -> Unit,
     modifier: Modifier = Modifier,
     responsive: ResponsiveValues,
     fontScale: Float
