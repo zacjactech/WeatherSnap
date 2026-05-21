@@ -48,9 +48,8 @@ GoogleService-Info.plist
 # ==========================================
 # IDE Configuration (Team & User Decoupling)
 # ==========================================
-# VS Code Configuration (ignoring all except the MCP template)
-.vscode/*
-!.vscode/mcp.json.template
+# VS Code Configuration
+.vscode/
 
 # IntelliJ IDEA / Android Studio
 .idea/
@@ -73,11 +72,3 @@ desktop.ini
 *.swp
 *~
 
-# ==========================================
-# AI & Agentic Tools
-# ==========================================
-.antigravitycli/
-.cline/
-.aider/
-.cursor/
-.gemini/
