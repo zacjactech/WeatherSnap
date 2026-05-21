@@ -83,7 +83,7 @@ fun HistoryRoute(
 fun HistoryScreen(
     uiState: HistoryUiState,
     onReportClick: (String) -> Unit,
-    onRefreshClick: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onRefreshClick: () -> Unit,
     onCreateReportClick: () -> Unit = {},
     onNavigateToHome: () -> Unit = {},
     onNavigateToCamera: () -> Unit = {},
@@ -100,10 +100,25 @@ fun HistoryScreen(
 
     Scaffold(
         topBar = {
-            WeatherSnapTopBar(
-                title = "Reports",
-                responsive = responsive,
-                showOverflow = false
+            CenterAlignedTopAppBar(
+                title = { Text("WeatherSnap", fontSize = (18 * fontScale).sp, fontWeight = FontWeight.Bold, color = PrimaryColor) },
+                navigationIcon = {
+                    IconButton(onClick = {}) {
+                        Icon(Icons.Default.Search, contentDescription = "Search", tint = PrimaryColor)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onNavigateToSettings) {
+                        Surface(
+                            shape = CircleShape,
+                            color = WeatherSnapColors.SurfaceContainerHigh,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, OutlineVariantColor.copy(alpha = 0.5f))
+                        ) {
+                            Icon(Icons.Default.AccountBox, contentDescription = "Settings", modifier = Modifier.padding(6.dp), tint = PrimaryColor)
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = WeatherSnapColors.Background)
             )
         },
         bottomBar = {
@@ -192,24 +207,56 @@ private fun HistoryTimelineList(
     ) {
         // Section header
         item {
-            Column(modifier = Modifier.padding(bottom = responsive.itemSpacing)) {
-                Text(
-                    "Saved Reports",
-                    fontSize = (18 * fontScale).sp,
-                    fontWeight = FontWeight.Bold,
-                    color = OnSurfaceColor
-                )
-                Text(
-                    "Observation archive for Sector 4.",
-                    fontSize = (14 * fontScale).sp,
-                    color = OnSurfaceVariantColor
-                )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = responsive.itemSpacing),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Saved Reports",
+                        fontSize = (18 * fontScale).sp,
+                        fontWeight = FontWeight.Bold,
+                        color = OnSurfaceColor
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Observation archive for Sector 4.",
+                        fontSize = (14 * fontScale).sp,
+                        color = OnSurfaceVariantColor
+                    )
+                }
+                Surface(
+                    color = WeatherSnapColors.SurfaceContainerHigh,
+                    shape = RoundedCornerShape(8.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, OutlineVariantColor.copy(alpha = 0.3f)),
+                    modifier = Modifier.size(responsive.touchTargetMin).clickable { }
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        // Custom filter icon — 3 horizontal lines of decreasing width
+                        androidx.compose.foundation.Canvas(modifier = Modifier.size(responsive.iconSize)) {
+                            val w = size.width
+                            val h = size.height
+                            val stroke = 2.dp.toPx()
+                            val color = OnSurfaceColor
+                            // Line 1 — full width
+                            drawLine(color, start = androidx.compose.ui.geometry.Offset(0f, h * 0.2f), end = androidx.compose.ui.geometry.Offset(w, h * 0.2f), strokeWidth = stroke)
+                            // Line 2 — 70% width, centred
+                            drawLine(color, start = androidx.compose.ui.geometry.Offset(w * 0.15f, h * 0.5f), end = androidx.compose.ui.geometry.Offset(w * 0.85f, h * 0.5f), strokeWidth = stroke)
+                            // Line 3 — 40% width, centred
+                            drawLine(color, start = androidx.compose.ui.geometry.Offset(w * 0.30f, h * 0.8f), end = androidx.compose.ui.geometry.Offset(w * 0.70f, h * 0.8f), strokeWidth = stroke)
+                        }
+                    }
+                }
             }
         }
 
         itemsIndexed(snaps, key = { _, snap -> snap.id }) { index, snap ->
             TimelineSnapCard(
                 snap = snap,
+                isFirst = index == 0,
                 isLast = index == snaps.lastIndex,
                 onClick = { onReportClick(snap.id) },
                 responsive = responsive,
@@ -217,30 +264,43 @@ private fun HistoryTimelineList(
             )
         }
 
-        // Load older reports row
+        // Load older reports + FAB — side by side
         if (snaps.isNotEmpty()) {
             item {
-                BoxWithConstraints(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = responsive.itemSpacing / 2, bottom = responsive.itemSpacing)
+                        .padding(top = responsive.itemSpacing, bottom = responsive.itemSpacing),
+                    horizontalArrangement = Arrangement.spacedBy(responsive.gridGap),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val compact = maxWidth < 340.dp
-                    if (compact) {
-                        Column(verticalArrangement = Arrangement.spacedBy(responsive.gridGap)) {
-                            LoadOlderReportsButton(modifier = Modifier.fillMaxWidth(), responsive = responsive, fontScale = fontScale)
-                            CreateReportFab(onClick = onCreateReportClick, modifier = Modifier.align(Alignment.End), responsive = responsive)
-                        }
-                    } else {
+                    // Load Older Reports button — takes remaining space
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(responsive.buttonHeight)
+                            .clickable { },
+                        color = WeatherSnapColors.SurfaceContainerHigh,
+                        shape = RoundedCornerShape(responsive.cardCornerRadius / 1.5f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, OutlineVariantColor.copy(alpha = 0.5f))
+                    ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.fillMaxSize(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
                         ) {
-                            LoadOlderReportsButton(responsive = responsive, fontScale = fontScale)
-                            CreateReportFab(onClick = onCreateReportClick, responsive = responsive)
+                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = OnSurfaceVariantColor, modifier = Modifier.size(responsive.iconSize))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                "Load Older Reports",
+                                fontSize = (13 * fontScale).sp,
+                                color = OnSurfaceVariantColor,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
                     }
+                    // FAB — fixed circle
+                    CreateReportFab(onClick = onCreateReportClick, responsive = responsive)
                 }
             }
         }
@@ -288,6 +348,7 @@ private fun CreateReportFab(onClick: () -> Unit, modifier: Modifier = Modifier, 
 @Composable
 private fun TimelineSnapCard(
     snap: WeatherSnap,
+    isFirst: Boolean,
     isLast: Boolean,
     onClick: () -> Unit,
     responsive: ResponsiveValues,
@@ -296,43 +357,55 @@ private fun TimelineSnapCard(
     val severity = snap.severity()
     val nodeColor = when (severity) {
         Severity.CRITICAL -> WeatherSnapColors.Tertiary
-        Severity.SEVERE -> PrimaryColor
-        Severity.ROUTINE -> OutlineVariantColor
+        Severity.SEVERE   -> PrimaryColor
+        Severity.ROUTINE  -> OutlineVariantColor.copy(alpha = 0.7f)
     }
-    val nodeSize = responsive.avatarSize
-    val timelineWidth = responsive.avatarSize
+    val nodeSize = 20.dp
+    val lineColor = OutlineVariantColor.copy(alpha = 0.35f)
 
-    Row(modifier = Modifier.fillMaxWidth()) {
+    // IntrinsicSize.Min allows the timeline column to fill the card's height
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+    ) {
         // ── Timeline connector column ─────────────────────────────────────
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.width(timelineWidth)
+            modifier = Modifier
+                .width(responsive.avatarSize)
+                .fillMaxHeight()
         ) {
-            // Node circle - outer ring with inner dot
+            if (!isFirst) {
+                Box(modifier = Modifier.width(2.dp).height(responsive.photoHeroHeight * 0.3f).background(lineColor))
+            } else {
+                Spacer(modifier = Modifier.height(responsive.photoHeroHeight * 0.3f))
+            }
             Box(
                 modifier = Modifier
                     .size(nodeSize)
                     .clip(CircleShape)
-                    .background(WeatherSnapColors.SurfaceContainer)
-                    .border(2.dp, nodeColor, CircleShape),
+                    .background(WeatherSnapColors.Background)
+                    .border(
+                        width = if (severity == Severity.CRITICAL) 2.dp else 1.dp,
+                        color = nodeColor,
+                        shape = CircleShape
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
                     modifier = Modifier
-                        .size(nodeSize / 2.5f)
+                        .size(if (severity == Severity.CRITICAL) nodeSize / 2.2f else nodeSize / 3.5f)
                         .clip(CircleShape)
                         .background(nodeColor)
                 )
             }
-            // Connecting line
             if (!isLast) {
                 Box(
                     modifier = Modifier
                         .width(2.dp)
-                        .defaultMinSize(minHeight = responsive.itemSpacing)
-                        .weight(1f, fill = false)
-                        .height(responsive.itemSpacing * 2.5f)
-                        .background(OutlineVariantColor.copy(alpha = 0.4f))
+                        .weight(1f)
+                        .background(lineColor)
                 )
             }
         }
@@ -349,48 +422,48 @@ private fun TimelineSnapCard(
                     .then(
                         if (severity == Severity.CRITICAL)
                             Modifier.shadow(
-                                elevation = 15.dp,
+                                elevation = 12.dp,
                                 shape = RoundedCornerShape(responsive.cardCornerRadius),
-                                ambientColor = WeatherSnapColors.Tertiary.copy(alpha = 0.1f),
-                                spotColor = WeatherSnapColors.Tertiary.copy(alpha = 0.1f)
+                                ambientColor = WeatherSnapColors.Tertiary.copy(alpha = 0.15f),
+                                spotColor = WeatherSnapColors.Tertiary.copy(alpha = 0.15f)
                             )
                         else Modifier
                     ),
                 color = WeatherSnapColors.SurfaceContainer,
                 shape = RoundedCornerShape(responsive.cardCornerRadius),
                 border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    if (severity == Severity.CRITICAL) WeatherSnapColors.Tertiary.copy(alpha = 0.5f)
-                    else OutlineVariantColor
+                    if (severity == Severity.CRITICAL) 1.5.dp else 1.dp,
+                    if (severity == Severity.CRITICAL) WeatherSnapColors.Tertiary.copy(alpha = 0.6f)
+                    else OutlineVariantColor.copy(alpha = 0.4f)
                 )
             ) {
                 Column {
-                    // Photo hero
                     SnapPhotoHero(snap = snap, severity = severity, responsive = responsive, fontScale = fontScale)
-
-                    // Content
                     Column(modifier = Modifier.padding(responsive.cardPadding)) {
-                        // Title
                         val titleColor = if (severity == Severity.CRITICAL) WeatherSnapColors.Tertiary else OnSurfaceColor
                         Text(
                             text = buildCardTitle(snap),
-                            fontSize = (18 * fontScale).sp,
-                            fontWeight = FontWeight.SemiBold,
+                            fontSize = (15 * fontScale).sp,
+                            fontWeight = FontWeight.Bold,
                             color = titleColor,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
-                        // Subtitle / notes preview
-                        if (snap.notes.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(responsive.itemSpacing / 4))
-                            Text(
-                                text = snap.notes,
-                                fontSize = (14 * fontScale).sp,
-                                color = OnSurfaceVariantColor,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        val descText = if (snap.notes.isNotEmpty()) snap.notes
+                        else snap.telemetry?.condition?.name
+                            ?.replace("_", " ")
+                            ?.lowercase()
+                            ?.replaceFirstChar { it.uppercase() }
+                            ?.let { "$it observation recorded at this location." }
+                            ?: "Observation recorded."
+                        Text(
+                            text = descText,
+                            fontSize = (12 * fontScale).sp,
+                            color = OnSurfaceVariantColor,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
@@ -480,12 +553,14 @@ private fun SeverityChip(severity: Severity, responsive: ResponsiveValues, fontS
                 androidx.compose.foundation.Canvas(modifier = Modifier.size(responsive.iconSize * 0.5f)) {
                     val path = androidx.compose.ui.graphics.Path().apply {
                         moveTo(size.width / 2, 0f)
-                        lineTo(size.width, size.height * 0.5f)
-                        lineTo(size.width / 2, size.height)
-                        lineTo(0f, size.height * 0.5f)
+                        lineTo(size.width, size.height * 0.8f)
+                        lineTo(0f, size.height * 0.8f)
                         close()
                     }
                     drawPath(path = path, color = WeatherSnapColors.OnTertiaryContainer)
+                    // draw exclamation point
+                    drawLine(color = WeatherSnapColors.Tertiary.copy(alpha = 0.95f), start = androidx.compose.ui.geometry.Offset(size.width / 2, size.height * 0.35f), end = androidx.compose.ui.geometry.Offset(size.width / 2, size.height * 0.55f), strokeWidth = 2f)
+                    drawCircle(color = WeatherSnapColors.Tertiary.copy(alpha = 0.95f), radius = 1.5f, center = androidx.compose.ui.geometry.Offset(size.width / 2, size.height * 0.65f))
                 }
             }
         )
@@ -494,9 +569,12 @@ private fun SeverityChip(severity: Severity, responsive: ResponsiveValues, fontS
             fg = Color.White,
             label = "Severe",
             icon = {
-                androidx.compose.foundation.Canvas(modifier = Modifier.size(responsive.iconSize * 0.5f)) {
-                    drawCircle(color = Color.White, radius = size.width * 0.4f)
-                    drawCircle(color = WeatherSnapColors.PrimaryContainer.copy(alpha = 0.9f), radius = size.width * 0.2f)
+                androidx.compose.foundation.Canvas(modifier = Modifier.size(responsive.iconSize * 0.6f)) {
+                    drawArc(color = Color.White, startAngle = 180f, sweepAngle = 180f, useCenter = false, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f))
+                    drawLine(color = Color.White, start = androidx.compose.ui.geometry.Offset(0f, size.height / 2), end = androidx.compose.ui.geometry.Offset(size.width, size.height / 2), strokeWidth = 2f)
+                    // rain drops
+                    drawLine(color = Color.White, start = androidx.compose.ui.geometry.Offset(size.width * 0.3f, size.height * 0.6f), end = androidx.compose.ui.geometry.Offset(size.width * 0.3f, size.height * 0.8f), strokeWidth = 1.5f)
+                    drawLine(color = Color.White, start = androidx.compose.ui.geometry.Offset(size.width * 0.7f, size.height * 0.6f), end = androidx.compose.ui.geometry.Offset(size.width * 0.7f, size.height * 0.8f), strokeWidth = 1.5f)
                 }
             }
         )
@@ -505,8 +583,9 @@ private fun SeverityChip(severity: Severity, responsive: ResponsiveValues, fontS
             fg = OnSurfaceColor,
             label = "Routine",
             icon = {
-                androidx.compose.foundation.Canvas(modifier = Modifier.size(responsive.iconSize * 0.5f)) {
-                    drawCircle(color = OnSurfaceVariantColor.copy(alpha = 0.5f), radius = size.width * 0.35f, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5f))
+                androidx.compose.foundation.Canvas(modifier = Modifier.size(responsive.iconSize * 0.6f)) {
+                    drawArc(color = OnSurfaceColor, startAngle = 180f, sweepAngle = 180f, useCenter = false, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f))
+                    drawLine(color = OnSurfaceColor, start = androidx.compose.ui.geometry.Offset(0f, size.height / 2), end = androidx.compose.ui.geometry.Offset(size.width, size.height / 2), strokeWidth = 2f)
                 }
             }
         )
@@ -517,9 +596,9 @@ private fun SeverityChip(severity: Severity, responsive: ResponsiveValues, fontS
         border = if (severity == Severity.ROUTINE) androidx.compose.foundation.BorderStroke(1.dp, OutlineVariantColor.copy(alpha = 0.4f)) else null
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = responsive.cardPadding / 2, vertical = responsive.itemSpacing / 4),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(responsive.gridGap / 2)
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             chipData.icon()
             Text(

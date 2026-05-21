@@ -48,5 +48,13 @@ data class HourlyDataDto(
     @SerialName("relativehumidity_2m")
     val relativehumidity2m: List<Int> = emptyList(),
     @SerialName("windspeed_10m")
-    val windspeed10m: List<Double> = emptyList()
+    val windspeed10m: List<Double> = emptyList(),
+    @SerialName("visibility")
+    val visibility: List<Double> = emptyList(),
+    @SerialName("uv_index")
+    val uvIndex: List<Double> = emptyList(),
+    @SerialName("cloudcover")
+    val cloudcover: List<Int> = emptyList(),
+    @SerialName("dewpoint_2m")
+    val dewpoint2m: List<Double> = emptyList()
 )

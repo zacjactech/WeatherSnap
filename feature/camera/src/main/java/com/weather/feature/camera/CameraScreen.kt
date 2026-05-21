@@ -283,8 +283,8 @@ private fun FullscreenCameraPreview(
         // ── Viewfinder brackets (4 corner L-shapes) ───────────────────────
         ViewfinderBrackets(
             modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .fillMaxHeight(0.55f)
+                .fillMaxWidth(0.88f)
+                .fillMaxHeight(0.28f)
                 .align(Alignment.Center),
             responsive = responsive
         )
@@ -297,31 +297,84 @@ private fun FullscreenCameraPreview(
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = responsive.buttonHeight * 2.55f)
+                    .padding(bottom = responsive.buttonHeight * 4.2f)
                     .padding(horizontal = responsive.screenPadding)
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(responsive.gridGap)
             ) {
                 TelemetryChip(
-                    icon = { CameraThermometerIcon(tint = WeatherSnapColors.Secondary, iconSize = responsive.iconSize * 0.8f) },
+                    icon = { CameraThermometerIcon(tint = WeatherSnapColors.Secondary, iconSize = responsive.iconSize * 0.65f) },
                     value = "${t.temperatureCelsius.toInt()}°C",
                     responsive = responsive,
-                    fontScale = fontScale
+                    fontScale = fontScale * 0.82f
                 )
                 TelemetryChip(
-                    icon = { CameraWindIcon(tint = WeatherSnapColors.Secondary, iconSize = responsive.iconSize * 0.8f) },
-                    value = "${t.windSpeedKph.toInt()} KM/H NE",
+                    icon = { CameraWindIcon(tint = WeatherSnapColors.Secondary, iconSize = responsive.iconSize * 0.65f) },
+                    value = "${t.windSpeedKph.toInt()} KM/H",
                     responsive = responsive,
-                    fontScale = fontScale
+                    fontScale = fontScale * 0.82f
                 )
                 t.humidityPercentage?.let { hum ->
                     TelemetryChip(
-                        icon = { CameraDropletIcon(tint = WeatherSnapColors.Secondary, iconSize = responsive.iconSize * 0.8f) },
-                        value = "${hum}% HUM",
+                        icon = { CameraDropletIcon(tint = WeatherSnapColors.Secondary, iconSize = responsive.iconSize * 0.65f) },
+                        value = "$hum% HUM",
                         responsive = responsive,
-                        fontScale = fontScale
+                        fontScale = fontScale * 0.82f
                     )
                 }
+                t.pressure?.let { pres ->
+                    TelemetryChip(
+                        icon = { Icon(Icons.Default.Speed, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(responsive.iconSize * 0.65f)) },
+                        value = "${pres.toInt()} hPa",
+                        responsive = responsive,
+                        fontScale = fontScale * 0.82f
+                    )
+                }
+                t.visibilityKm?.let { vis ->
+                    TelemetryChip(
+                        icon = { Icon(Icons.Default.Visibility, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(responsive.iconSize * 0.65f)) },
+                        value = "${vis.toInt()} KM",
+                        responsive = responsive,
+                        fontScale = fontScale * 0.82f
+                    )
+                }
+                t.uvIndex?.let { uv ->
+                    TelemetryChip(
+                        icon = { Icon(Icons.Default.WbSunny, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(responsive.iconSize * 0.65f)) },
+                        value = "UV $uv",
+                        responsive = responsive,
+                        fontScale = fontScale * 0.82f
+                    )
+                }
+                t.cloudCoverPercent?.let { cloud ->
+                    TelemetryChip(
+                        icon = { Icon(Icons.Default.Cloud, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(responsive.iconSize * 0.65f)) },
+                        value = "$cloud% CLD",
+                        responsive = responsive,
+                        fontScale = fontScale * 0.82f
+                    )
+                }
+                t.dewPointCelsius?.let { dew ->
+                    TelemetryChip(
+                        icon = { Icon(Icons.Default.WaterDrop, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(responsive.iconSize * 0.65f)) },
+                        value = "DP ${dew.toInt()}°",
+                        responsive = responsive,
+                        fontScale = fontScale * 0.82f
+                    )
+                }
+                // Altitude estimated from pressure
+                TelemetryChip(
+                    icon = { Icon(Icons.Default.Terrain, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(responsive.iconSize * 0.65f)) },
+                    value = "${((1013.25 - (t.pressure ?: 1013.25)) * 8.5).toInt().coerceAtLeast(0)}m",
+                    responsive = responsive,
+                    fontScale = fontScale * 0.82f
+                )
+                TelemetryChip(
+                    icon = { Icon(Icons.Default.LocationOn, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(responsive.iconSize * 0.65f)) },
+                    value = "GPS",
+                    responsive = responsive,
+                    fontScale = fontScale * 0.82f
+                )
             }
         }
 
@@ -342,29 +395,21 @@ private fun FullscreenCameraPreview(
             ) {
                 // PANO mode shortcut
                 Column(
-                    modifier = Modifier.height(responsive.touchTargetMin),
+                    modifier = Modifier
+                        .height(responsive.touchTargetMin * 1.3f)
+                        .clickable { /* Panorama mode TODO */ }
+                        .padding(top = responsive.itemSpacing),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceBetween
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .aspectRatio(1f)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.White.copy(alpha = 0.12f))
-                            .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
-                            .clickable { /* Panorama mode TODO */ },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.Panorama,
-                            contentDescription = "Panorama",
-                            tint = Color.White,
-                            modifier = Modifier.size(responsive.iconSize * 0.9f)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text("PANO", fontSize = (8 * fontScale).sp, color = Color.White, fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp)
+                    Icon(
+                        Icons.Default.Image,
+                        contentDescription = "Panorama",
+                        tint = Color.White,
+                        modifier = Modifier.size(responsive.iconSize * 1.6f)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("PANO", fontSize = (10 * fontScale).sp, color = Color.White, fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp)
                 }
 
                 // Shutter button
@@ -404,7 +449,7 @@ private fun FullscreenCameraPreview(
                         .size(responsive.touchTargetMin)
                         .clip(RoundedCornerShape(8.dp))
                         .background(Color.White.copy(alpha = 0.12f))
-                        .border(2.dp, OutlineVariantColor, RoundedCornerShape(8.dp)),
+                        .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(8.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (lastPhotoPath != null) {

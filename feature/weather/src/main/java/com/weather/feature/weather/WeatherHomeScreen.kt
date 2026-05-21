@@ -47,6 +47,11 @@ import com.weather.core.model.LocationSearchResult
 import com.weather.core.model.WeatherCondition
 import com.weather.core.model.WeatherTelemetry
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.decode.ImageDecoderDecoder
+import coil.decode.GifDecoder
+import android.os.Build
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun WeatherHomeRoute(
@@ -179,8 +184,20 @@ private fun HeroSection(
     ) {
         val animCondition = (uiState as? WeatherUiState.Success)?.telemetry?.condition ?: com.weather.core.model.WeatherCondition.CLEAR
 
+        val context = LocalContext.current
+        val imageRequest = ImageRequest.Builder(context)
+            .data(getBackgroundImageUrlForCondition(animCondition))
+            .decoderFactory(
+                if (Build.VERSION.SDK_INT >= 28) {
+                    ImageDecoderDecoder.Factory()
+                } else {
+                    GifDecoder.Factory()
+                }
+            )
+            .build()
+
         AsyncImage(
-            model = getBackgroundImageUrlForCondition(animCondition),
+            model = imageRequest,
             contentDescription = null,
             modifier = Modifier.matchParentSize(),
             contentScale = ContentScale.Crop
@@ -200,18 +217,13 @@ private fun HeroSection(
                     )
                 )
         )
-        // Additional dark overlay to improve text legibility
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(Color.Black.copy(alpha = 0.55f))
-        )
+        // No extra dark overlay, let the gif shine!
 
         // Dynamic Weather Animation Background based on actual state condition
-        WeatherAnimationBackground(
-            condition = animCondition,
-            modifier = Modifier.matchParentSize()
-        )
+        // WeatherAnimationBackground(
+        //     condition = animCondition,
+        //     modifier = Modifier.matchParentSize()
+        // )
 
         when (uiState) {
             is WeatherUiState.Loading -> {
@@ -721,7 +733,7 @@ fun WeatherAnimationBackground(condition: WeatherCondition, modifier: Modifier =
                 targetValue = 1f,
                 animationSpec = infiniteRepeatable(
                     animation = tween(durationMillis = 1200, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart
+                    repeatMode = RepeatMode.Reverse
                 ),
                 label = "rainFall"
             )
@@ -737,10 +749,10 @@ fun WeatherAnimationBackground(condition: WeatherCondition, modifier: Modifier =
                     val length = 25f + random.nextFloat() * 20f
                     val speedMultiplier = 1.0f + random.nextFloat() * 0.8f
                     
-                    val x = (initialX - (progress * 80f * speedMultiplier)) % size.width
-                    val y = (initialY + (progress * size.height * speedMultiplier)) % size.height
+                    val x = initialX - (progress * 80f * speedMultiplier)
+                    val y = initialY + (progress * size.height * speedMultiplier)
                     
-                    val drawX = if (x < 0) x + size.width else x
+                    val drawX = x
                     
                     drawLine(
                         color = Color(0xFFB3EDFF).copy(alpha = 0.20f + random.nextFloat() * 0.15f),
@@ -757,7 +769,7 @@ fun WeatherAnimationBackground(condition: WeatherCondition, modifier: Modifier =
                 targetValue = 1f,
                 animationSpec = infiniteRepeatable(
                     animation = tween(durationMillis = 4000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart
+                    repeatMode = RepeatMode.Reverse
                 ),
                 label = "snowFall"
             )
@@ -775,10 +787,10 @@ fun WeatherAnimationBackground(condition: WeatherCondition, modifier: Modifier =
                     
                     val sway = kotlin.math.sin((progress * 2 * kotlin.math.PI.toFloat()) + i) * 30f
                     
-                    val x = (initialX + sway) % size.width
-                    val y = (initialY + (progress * size.height * speedMultiplier)) % size.height
+                    val x = initialX + sway
+                    val y = initialY + (progress * size.height * speedMultiplier)
                     
-                    val drawX = if (x < 0) x + size.width else x
+                    val drawX = x
                     
                     drawCircle(
                         color = Color.White.copy(alpha = 0.35f + random.nextFloat() * 0.35f),
@@ -804,7 +816,7 @@ fun WeatherAnimationBackground(condition: WeatherCondition, modifier: Modifier =
                 targetValue = 360f,
                 animationSpec = infiniteRepeatable(
                     animation = tween(durationMillis = 20000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart
+                    repeatMode = RepeatMode.Reverse
                 ),
                 label = "sunRotate"
             )
@@ -863,7 +875,7 @@ fun WeatherAnimationBackground(condition: WeatherCondition, modifier: Modifier =
                 targetValue = 1f,
                 animationSpec = infiniteRepeatable(
                     animation = tween(durationMillis = 18000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart
+                    repeatMode = RepeatMode.Reverse
                 ),
                 label = "cloudDrift"
             )
@@ -879,7 +891,7 @@ fun WeatherAnimationBackground(condition: WeatherCondition, modifier: Modifier =
                     val radius = 50f + random.nextFloat() * 60f
                     val speed = 0.5f + random.nextFloat() * 0.5f
                     
-                    val x = (initialX + (progress * size.width * speed)) % size.width
+                    val x = initialX + (progress * size.width * speed) - (size.width * 0.5f)
                     
                     drawCircle(
                         brush = Brush.radialGradient(
@@ -900,7 +912,7 @@ fun WeatherAnimationBackground(condition: WeatherCondition, modifier: Modifier =
                     val windProgress = driftState.value
                     for (j in 0 until 4) {
                         val y = size.height * 0.2f + (j * size.height * 0.18f)
-                        val startX = (windProgress * size.width + (j * 150f)) % size.width
+                        val startX = (windProgress * size.width * 1.5f + (j * 150f)) - (size.width * 0.5f)
                         val lineLength = 120f
                         
                         drawLine(
@@ -919,11 +931,11 @@ fun WeatherAnimationBackground(condition: WeatherCondition, modifier: Modifier =
 
 private fun getBackgroundImageUrlForCondition(condition: com.weather.core.model.WeatherCondition): String {
     return when (condition) {
-        com.weather.core.model.WeatherCondition.CLEAR -> "https://images.unsplash.com/photo-1601297183305-6df142704ea2?auto=format&fit=crop&w=1200&q=80"
-        com.weather.core.model.WeatherCondition.CLOUDY -> "https://images.unsplash.com/photo-1445220499081-01f11a48c48a?auto=format&fit=crop&w=1200&q=80"
-        com.weather.core.model.WeatherCondition.RAIN -> "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=1200&q=80"
-        com.weather.core.model.WeatherCondition.SNOW -> "https://images.unsplash.com/photo-1491002052546-bf38f186af56?auto=format&fit=crop&w=1200&q=80"
-        com.weather.core.model.WeatherCondition.THUNDERSTORM -> "https://images.unsplash.com/photo-1605727216801-e27ce1d0ce3c?auto=format&fit=crop&w=1200&q=80"
-        else -> "https://images.unsplash.com/photo-1601297183305-6df142704ea2?auto=format&fit=crop&w=1200&q=80"
+        com.weather.core.model.WeatherCondition.CLEAR -> "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExc29wMnUxd2FvdG9iNnk4ZTNscDJ0MzFpMjN5MHM3bjlkdmwzZXZuNiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/u01ioCe6G8URG/giphy.gif"
+        com.weather.core.model.WeatherCondition.CLOUDY -> "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3h0Y2M0bm80NmFob2Q2NGFpeHZ1NDg3azRveWRmNW1tcnJwbnB2bCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7rc6sa2RvKo8K5EI/giphy.gif"
+        com.weather.core.model.WeatherCondition.RAIN -> "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM2QzM2x6eHV6OGw1bWVwaDBpeDdtNnh6NWVnbWJtbHF1ZGhqYWF0biZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/tqfS3XlImS4y8hC62h/giphy.gif"
+        com.weather.core.model.WeatherCondition.SNOW -> "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMjRteTFweDBybzNsOXhhZDFkODFsc3J4NGUydzh1NXhkMnkybHZjZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/7BgpK5cAmSKQ/giphy.gif"
+        com.weather.core.model.WeatherCondition.THUNDERSTORM -> "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNG11eWt0Y21kdjAyd2htOHU0ZjIzMDkyMms5NXY4cjNxMHByNnl1dSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26uf5HjasT04aWk3m/giphy.gif"
+        else -> "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExc29wMnUxd2FvdG9iNnk4ZTNscDJ0MzFpMjN5MHM3bjlkdmwzZXZuNiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/u01ioCe6G8URG/giphy.gif"
     }
 }

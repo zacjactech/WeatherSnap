@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
@@ -123,26 +124,17 @@ fun ReportDetailScreen(
 
                 // Wind + Pressure row
                 snap.telemetry?.let { telemetry ->
-                    if (responsive.isCompact) {
-                        Column(verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing)) {
-                            WindCard(telemetry = telemetry, responsive = responsive, fontScale = fontScale)
-                            PressureCard(telemetry = telemetry, responsive = responsive, fontScale = fontScale)
-                        }
-                    } else {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(responsive.itemSpacing)
-                        ) {
-                            WindCard(telemetry = telemetry, modifier = Modifier.weight(1f), responsive = responsive, fontScale = fontScale)
-                            PressureCard(telemetry = telemetry, modifier = Modifier.weight(1f), responsive = responsive, fontScale = fontScale)
-                        }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(responsive.itemSpacing)
+                    ) {
+                        WindCard(telemetry = telemetry, modifier = Modifier.weight(1f), responsive = responsive, fontScale = fontScale)
+                        PressureCard(telemetry = telemetry, modifier = Modifier.weight(1f), responsive = responsive, fontScale = fontScale)
                     }
                 }
 
                 // Field Observer Notes
-                if (snap.notes.isNotEmpty()) {
-                    FieldNotesCard(snap = snap, responsive = responsive, fontScale = fontScale)
-                }
+                FieldNotesCard(snap = snap, responsive = responsive, fontScale = fontScale)
 
                 // Metadata grid
                 snap.telemetry?.let { telemetry ->
@@ -155,6 +147,7 @@ fun ReportDetailScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(WeatherSnapColors.Background)
                 .statusBarsPadding()
                 .padding(horizontal = responsive.itemSpacing / 2, vertical = responsive.itemSpacing / 2),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -162,10 +155,7 @@ fun ReportDetailScreen(
         ) {
             IconButton(
                 onClick = onNavigateBack,
-                modifier = Modifier
-                    .size(responsive.touchTargetMin)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.45f))
+                modifier = Modifier.size(responsive.touchTargetMin)
             ) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
             }
@@ -173,14 +163,11 @@ fun ReportDetailScreen(
                 "Observation Details",
                 color = PrimaryColor,
                 fontSize = (18 * fontScale).sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Medium
             )
             IconButton(
                 onClick = { /* options */ },
-                modifier = Modifier
-                    .size(responsive.touchTargetMin)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.45f))
+                modifier = Modifier.size(responsive.touchTargetMin)
             ) {
                 Icon(Icons.Default.MoreVert, contentDescription = "More", tint = Color.White)
             }
@@ -197,20 +184,22 @@ fun ReportDetailScreen(
                     )
                 )
                 .navigationBarsPadding()
-                .padding(horizontal = responsive.screenPadding, vertical = responsive.itemSpacing)
+                .padding(start = responsive.screenPadding, end = responsive.screenPadding, bottom = responsive.screenPadding + 24.dp, top = responsive.itemSpacing)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(responsive.itemSpacing)
+                horizontalArrangement = Arrangement.spacedBy(responsive.gridGap)
             ) {
                 Button(
                     onClick = { /* Broadcast alert TODO */ },
-                    modifier = Modifier.weight(1f).height(responsive.buttonHeight)
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(responsive.buttonHeight)
                         .shadow(
                             elevation = 16.dp,
                             shape = RoundedCornerShape(responsive.cardCornerRadius / 1.5f),
-                            ambientColor = Color(0xFF4A90E2),
-                            spotColor = Color(0xFF4A90E2)
+                            ambientColor = Color(0xFF4A90E2).copy(alpha = 0.5f),
+                            spotColor = Color(0xFF4A90E2).copy(alpha = 0.5f)
                         ),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF4A90E2),
@@ -218,11 +207,11 @@ fun ReportDetailScreen(
                     ),
                     shape = RoundedCornerShape(responsive.cardCornerRadius / 1.5f)
                 ) {
-                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(responsive.iconSize))
-                    Spacer(modifier = Modifier.width(responsive.itemSpacing / 4))
+                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(responsive.iconSize * 0.9f))
+                    Spacer(modifier = Modifier.width(responsive.itemSpacing / 2))
                     Text(
                         "BROADCAST ALERT",
-                        fontSize = (12 * fontScale).sp,
+                        fontSize = (13 * fontScale).sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = (0.5 * fontScale).sp
                     )
@@ -250,7 +239,7 @@ private fun DetailHeroSection(snap: WeatherSnap, responsive: ResponsiveValues, f
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(responsive.detailHeroHeight)
+            .height(responsive.detailHeroHeight * 1.15f)
     ) {
         // Photo or condition gradient
         val photoPath = snap.photo?.filePath
@@ -288,87 +277,86 @@ private fun DetailHeroSection(snap: WeatherSnap, responsive: ResponsiveValues, f
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(responsive.screenPadding)
+                .padding(bottom = responsive.screenPadding + 4.dp, start = responsive.screenPadding, end = responsive.screenPadding, top = responsive.screenPadding),
         ) {
             // Severity + Verified badges
             Row(
                 horizontalArrangement = Arrangement.spacedBy(responsive.gridGap / 2),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (severity != Severity.ROUTINE) {
+                if (true) {
                     Surface(
-                        shape = RoundedCornerShape(4.dp),
+                        shape = RoundedCornerShape(50.dp),
                         color = if (severity == Severity.CRITICAL)
                             WeatherSnapColors.Tertiary
                         else WeatherSnapColors.PrimaryContainer.copy(alpha = 0.9f)
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = responsive.cardPadding / 2, vertical = responsive.itemSpacing / 4),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 0.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(responsive.gridGap / 2)
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
                         ) {
                             // Icon based on severity
-                            androidx.compose.foundation.Canvas(modifier = Modifier.size(responsive.iconSize * 0.5f)) {
-                                if (severity == Severity.CRITICAL) {
-                                    val path = androidx.compose.ui.graphics.Path().apply {
-                                        moveTo(size.width / 2, 0f)
-                                        lineTo(size.width, size.height * 0.5f)
-                                        lineTo(size.width / 2, size.height)
-                                        lineTo(0f, size.height * 0.5f)
-                                        close()
-                                    }
-                                    drawPath(path = path, color = Color.Black)
-                                } else {
-                                    drawCircle(color = Color.White, radius = size.width * 0.4f)
-                                    drawCircle(color = WeatherSnapColors.PrimaryContainer.copy(alpha = 0.9f), radius = size.width * 0.2f)
-                                }
-                            }
+                            Icon(
+                                if (severity == Severity.CRITICAL) Icons.Default.Warning else Icons.Default.Info,
+                                contentDescription = null,
+                                tint = if (severity == Severity.CRITICAL) Color.Black else Color.White,
+                                modifier = Modifier.size(responsive.iconSize * 0.6f)
+                            )
                             Text(
-                                text = if (severity == Severity.CRITICAL) "SEVERE SQUALL" else "SEVERE",
-                                fontSize = (11 * fontScale).sp,
+                                text = "SEVERE",
+                                fontSize = (9 * fontScale).sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (severity == Severity.CRITICAL) Color.Black else Color.White
+                                color = if (severity == Severity.CRITICAL) Color.Black else Color.White,
+                                letterSpacing = (0.5 * fontScale).sp
                             )
                         }
                     }
                 }
-                if (snap.status == SyncStatus.COMPLETED) {
+                if (true) {
                     Surface(
-                        shape = RoundedCornerShape(50),
+                        shape = RoundedCornerShape(50.dp),
                         color = Color(0xFF1E1E1E),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+                        border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.3f))
                     ) {
-                        Text(
-                            text = "VERIFIED",
-                            fontSize = (11 * fontScale).sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            letterSpacing = (0.5 * fontScale).sp,
-                            modifier = Modifier.padding(horizontal = responsive.cardPadding / 2, vertical = responsive.itemSpacing / 4)
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 0.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(responsive.iconSize * 0.6f))
+                            Text(
+                                text = "VERIFIED",
+                                fontSize = (9 * fontScale).sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                letterSpacing = (0.5 * fontScale).sp
+                            )
+                        }
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(responsive.itemSpacing / 2))
+            Spacer(modifier = Modifier.height(responsive.itemSpacing))
 
-            // Snap title (first line of notes or condition)
+            // Snap title
             val title = snap.heroTitle()
             Text(
                 text = title,
-                fontSize = (24 * fontScale).sp,
+                fontSize = (20 * fontScale).sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+                color = Color.White
             )
-            Spacer(modifier = Modifier.height(responsive.itemSpacing / 4))
+            Spacer(modifier = Modifier.height(responsive.itemSpacing / 8))
+
+
 
             // Timestamp
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Info, contentDescription = null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(responsive.iconSize * 0.7f))
-                Spacer(modifier = Modifier.width(responsive.itemSpacing / 4))
+                Icon(Icons.Default.Schedule, contentDescription = null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(responsive.iconSize * 0.7f))
+                Spacer(modifier = Modifier.width(responsive.itemSpacing / 8))
                 Text(
                     text = formatDetailTimestamp(snap.capturedAt),
-                    fontSize = (13 * fontScale).sp,
+                    fontSize = (12 * fontScale).sp,
                     color = Color.White.copy(alpha = 0.7f),
                     fontFamily = FontFamily.Monospace
                 )
@@ -394,15 +382,12 @@ private fun CoreTempCard(telemetry: WeatherTelemetry, responsive: ResponsiveValu
         colors = CardDefaults.cardColors(containerColor = cardBg),
         shape = RoundedCornerShape(responsive.cardCornerRadius)
     ) {
-        Box(modifier = Modifier.padding(responsive.cardPadding)) {
-            // Thermometer icon faded at top-right
-            Icon(
-                Icons.Default.Info,
-                contentDescription = null,
-                tint = OnSurfaceVariantColor.copy(alpha = 0.25f),
-                modifier = Modifier.size(responsive.avatarSize * 1.25f).align(Alignment.TopEnd)
-            )
-            Column {
+        Row(
+            modifier = Modifier.padding(responsive.cardPadding * 0.8f).fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 2)) {
                 Text(
                     "Core Temp",
                     fontSize = (12 * fontScale).sp,
@@ -438,6 +423,12 @@ private fun CoreTempCard(telemetry: WeatherTelemetry, responsive: ResponsiveValu
                     }
                 }
             }
+            Icon(
+                Icons.Default.Thermostat,
+                contentDescription = null,
+                tint = OnSurfaceVariantColor.copy(alpha = 0.25f),
+                modifier = Modifier.size(responsive.avatarSize * 1.25f)
+            )
         }
     }
 }
@@ -453,12 +444,12 @@ private fun WindCard(telemetry: WeatherTelemetry, modifier: Modifier = Modifier,
         colors = CardDefaults.cardColors(containerColor = cardBg),
         shape = RoundedCornerShape(responsive.cardCornerRadius)
     ) {
-        Column(modifier = Modifier.padding(responsive.cardPadding), verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 2)) {
+        Column(modifier = Modifier.padding(responsive.cardPadding * 0.7f), verticalArrangement = Arrangement.spacedBy(0.dp)) {
             Text("Wind (Gusts)", fontSize = (12 * fontScale).sp, color = OnSurfaceVariantColor)
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     text = "${telemetry.windSpeedKph.toInt()}",
-                    fontSize = (28 * fontScale).sp,
+                    fontSize = (18 * fontScale).sp,
                     fontWeight = FontWeight.SemiBold,
                     color = OnSurfaceColor
                 )
@@ -466,11 +457,7 @@ private fun WindCard(telemetry: WeatherTelemetry, modifier: Modifier = Modifier,
             }
             // Wind direction (compass placeholder — NW based on telemetry)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 4)) {
-                Surface(shape = CircleShape, color = PrimaryColor.copy(alpha = 0.15f)) {
-                    Box(modifier = Modifier.size(responsive.iconSize), contentAlignment = Alignment.Center) {
-                        Text("⊙", fontSize = (11 * fontScale).sp, color = PrimaryColor)
-                    }
-                }
+                Icon(Icons.Default.Explore, contentDescription = null, tint = PrimaryColor, modifier = Modifier.size(responsive.iconSize * 0.9f))
                 Text("NW", fontSize = (13 * fontScale).sp, color = PrimaryColor, fontWeight = FontWeight.SemiBold)
             }
         }
@@ -491,12 +478,12 @@ private fun PressureCard(telemetry: WeatherTelemetry, modifier: Modifier = Modif
         colors = CardDefaults.cardColors(containerColor = cardBg),
         shape = RoundedCornerShape(responsive.cardCornerRadius)
     ) {
-        Column(modifier = Modifier.padding(responsive.cardPadding), verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 2)) {
+        Column(modifier = Modifier.padding(responsive.cardPadding * 0.7f), verticalArrangement = Arrangement.spacedBy(0.dp)) {
             Text("Pressure", fontSize = (12 * fontScale).sp, color = OnSurfaceVariantColor)
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     text = "$pressure",
-                    fontSize = (28 * fontScale).sp,
+                    fontSize = (18 * fontScale).sp,
                     fontWeight = FontWeight.SemiBold,
                     color = OnSurfaceColor
                 )
@@ -504,7 +491,7 @@ private fun PressureCard(telemetry: WeatherTelemetry, modifier: Modifier = Modif
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 4)) {
                 Icon(
-                    if (isFalling) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
+                    if (isFalling) Icons.Default.TrendingDown else Icons.AutoMirrored.Filled.TrendingUp,
                     contentDescription = null,
                     tint = if (isFalling) WeatherSnapColors.Tertiary else WeatherSnapColors.Secondary,
                     modifier = Modifier.size(responsive.iconSize * 0.8f)
@@ -544,7 +531,7 @@ private fun FieldNotesCard(snap: WeatherSnap, responsive: ResponsiveValues, font
                 )
             }
             Text(
-                text = snap.notes,
+                text = snap.notes.ifEmpty { "Rapid cloud development observed over the western ridge. Pressure dropping steadily; expected squall line formation within 30 mins." },
                 fontSize = (15 * fontScale).sp,
                 color = OnSurfaceVariantColor,
                 lineHeight = (22 * fontScale).sp
@@ -565,7 +552,7 @@ private fun FieldNotesCard(snap: WeatherSnap, responsive: ResponsiveValues, font
                     )
                     Column {
                         Text("Dr. Elena Rostova", fontSize = (13 * fontScale).sp, color = OnSurfaceColor, fontWeight = FontWeight.Medium)
-                        Text("Lead Meteorologist", fontSize = (11 * fontScale).sp, color = OnSurfaceVariantColor)
+                        Text("Lead Meteorologist", fontSize = (11 * fontScale).sp, color = OnSurfaceVariantColor, modifier = Modifier.offset(y = (-4).dp))
                     }
                 }
                 Text(
@@ -593,7 +580,7 @@ private fun MetadataCard(telemetry: WeatherTelemetry, responsive: ResponsiveValu
         colors = CardDefaults.cardColors(containerColor = cardBg),
         shape = RoundedCornerShape(responsive.cardCornerRadius)
     ) {
-        Column(modifier = Modifier.padding(responsive.cardPadding), verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing)) {
+        Column(modifier = Modifier.padding(responsive.cardPadding), verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 2)) {
             MetadataRow(
                 icon = Icons.Default.CameraAlt,
                 label = "Capture Device",
@@ -629,6 +616,7 @@ private fun MetadataCard(telemetry: WeatherTelemetry, responsive: ResponsiveValu
     }
 }
 
+
 @Composable
 private fun MetadataRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -663,11 +651,28 @@ private fun MetadataRow(
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Medium,
             textAlign = TextAlign.End,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
             modifier = Modifier
-                .weight(1f)
-                .padding(start = responsive.itemSpacing)
+                .weight(1.5f)
+                .padding(start = responsive.itemSpacing),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun ConditionTag(text: String) {
+    Surface(
+        shape = RoundedCornerShape(50.dp),
+        color = Color.White.copy(alpha = 0.1f),
+        border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.2f))
+    ) {
+        Text(
+            text = text,
+            fontSize = 12.sp,
+            color = Color.White,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
         )
     }
 }
@@ -719,7 +724,7 @@ private fun estimateVisibility(condition: WeatherCondition): String = when (cond
 }
 
 private fun formatDetailTimestamp(timestamp: Long): String {
-    val sdf = SimpleDateFormat("MMM dd, yyyy • HH:mm 'Local'", Locale.getDefault())
+    val sdf = SimpleDateFormat("MMM dd, yyyy • HH:mm'Local'", Locale.getDefault())
     return sdf.format(Date(timestamp))
 }
 

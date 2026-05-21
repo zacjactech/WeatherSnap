@@ -34,7 +34,7 @@ class WeatherRepositoryImpl @Inject constructor(
 
                 val condition = wmoCodeToCondition(current.weathercode)
                 val humidity = body.hourly?.relativehumidity2m?.firstOrNull()
-                
+
                 // Dynamic realistic pressure based on weather condition (standard atmosphere is ~1013 hPa)
                 val pressureVal = when (condition) {
                     WeatherCondition.RAIN, WeatherCondition.THUNDERSTORM -> 995.0 + (lat % 5.0) + (lon % 3.0)
@@ -42,6 +42,12 @@ class WeatherRepositoryImpl @Inject constructor(
                     WeatherCondition.CLOUDY -> 1009.0 + (lon % 6.0)
                     else -> 1014.0 + ((lat + lon) % 8.0)
                 }
+
+                // Extra hourly fields — Open-Meteo returns metres for visibility; convert to km
+                val visibilityKm = body.hourly?.visibility?.firstOrNull()?.let { it / 1000.0 }
+                val uvIndex = body.hourly?.uvIndex?.firstOrNull()?.toInt()
+                val cloudCover = body.hourly?.cloudcover?.firstOrNull()
+                val dewPoint = body.hourly?.dewpoint2m?.firstOrNull()
 
                 emit(
                     WeatherTelemetry(
@@ -51,7 +57,11 @@ class WeatherRepositoryImpl @Inject constructor(
                         windSpeedKph = current.windspeed,
                         pressure = pressureVal,
                         latitude = body.latitude,
-                        longitude = body.longitude
+                        longitude = body.longitude,
+                        visibilityKm = visibilityKm,
+                        uvIndex = uvIndex,
+                        cloudCoverPercent = cloudCover,
+                        dewPointCelsius = dewPoint
                     )
                 )
             } else {
