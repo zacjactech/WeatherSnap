@@ -1,6 +1,6 @@
 package com.weather.core.model
 
-import kotlinx.serialization.Serializable
+
 
 /**
  * Domain model representing a snapshot of current weather telemetry.
@@ -13,7 +13,7 @@ import kotlinx.serialization.Serializable
  * [windDirectionDegrees] is the actual compass bearing from the API (0–360°).
  * [highTempCelsius] / [lowTempCelsius] are the actual daily max/min temperatures.
  */
-@Serializable
+
 data class WeatherTelemetry(
     val temperatureCelsius: Double,
     val condition: WeatherCondition,

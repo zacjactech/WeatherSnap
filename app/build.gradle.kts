@@ -12,7 +12,7 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.weather.core.testing.HiltTestRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -42,7 +42,6 @@ dependencies {
     implementation(project(":feature:report"))
     implementation(project(":feature:camera"))
     implementation(project(":feature:history"))
-    implementation(project(":feature:settings"))
 
     // Core Infrastructures Module Bindings
     implementation(project(":core:common"))
@@ -63,11 +62,12 @@ dependencies {
     ksp("androidx.hilt:hilt-compiler:1.2.0")
 
     // Splash Screen
-    implementation("androidx.core:core-splashscreen:1.0.1")
+
 
     // Testing Support
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockk)
     testImplementation(libs.turbine)
+    androidTestImplementation(project(":core:testing"))
 }

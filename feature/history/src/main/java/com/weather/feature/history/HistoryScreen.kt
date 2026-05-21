@@ -63,8 +63,7 @@ fun HistoryRoute(
     onReportClick: (String) -> Unit,
     onCreateReportClick: () -> Unit = {},
     onNavigateToHome: () -> Unit = {},
-    onNavigateToCamera: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {}
+    onNavigateToCamera: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -74,8 +73,7 @@ fun HistoryRoute(
         onRefreshClick = viewModel::forceSync,
         onCreateReportClick = onCreateReportClick,
         onNavigateToHome = onNavigateToHome,
-        onNavigateToCamera = onNavigateToCamera,
-        onNavigateToSettings = onNavigateToSettings
+        onNavigateToCamera = onNavigateToCamera
     )
 }
 
@@ -87,8 +85,7 @@ fun HistoryScreen(
     @Suppress("UNUSED_PARAMETER") onRefreshClick: () -> Unit,
     onCreateReportClick: () -> Unit = {},
     onNavigateToHome: () -> Unit = {},
-    onNavigateToCamera: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {}
+    onNavigateToCamera: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val activity = context as? androidx.activity.ComponentActivity
@@ -106,21 +103,9 @@ fun HistoryScreen(
             CenterAlignedTopAppBar(
                 title = { Text("WeatherSnap", fontSize = (18 * fontScale).sp, fontWeight = FontWeight.Bold, color = PrimaryColor) },
                 navigationIcon = {
-                    IconButton(onClick = {}) {
-                        Icon(Icons.Default.Search, contentDescription = "Search", tint = PrimaryColor)
-                    }
+                    // Search icon removed as it is not part of the required features
                 },
-                actions = {
-                    IconButton(onClick = onNavigateToSettings) {
-                        Surface(
-                            shape = CircleShape,
-                            color = WeatherSnapColors.SurfaceContainerHigh,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, OutlineVariantColor.copy(alpha = 0.5f))
-                        ) {
-                            Icon(Icons.Default.AccountBox, contentDescription = "Settings", modifier = Modifier.padding(6.dp), tint = PrimaryColor)
-                        }
-                    }
-                },
+                actions = {},
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = WeatherSnapColors.Background)
             )
         },
@@ -130,9 +115,11 @@ fun HistoryScreen(
                 onNavigateToHome = onNavigateToHome,
                 onNavigateToCamera = onNavigateToCamera,
                 onNavigateToReports = {},
-                onNavigateToSettings = onNavigateToSettings,
                 responsive = responsive
             )
+        },
+        floatingActionButton = {
+            // FAB moved into EmptyHistoryState and removed from list end per requirements
         },
         containerColor = WeatherSnapColors.Background
     ) { paddingValues ->
@@ -144,7 +131,12 @@ fun HistoryScreen(
                 ) { CircularProgressIndicator(color = PrimaryColor) }
             }
             is HistoryUiState.Empty -> {
-                EmptyHistoryState(modifier = Modifier.padding(paddingValues), responsive = responsive, fontScale = fontScale)
+                EmptyHistoryState(
+                    modifier = Modifier.padding(paddingValues),
+                    responsive = responsive,
+                    fontScale = fontScale,
+                    onCreateReportClick = onCreateReportClick
+                )
             }
             is HistoryUiState.Success -> {
                 HistoryTimelineList(
@@ -164,7 +156,12 @@ fun HistoryScreen(
 }
 
 @Composable
-private fun EmptyHistoryState(modifier: Modifier = Modifier, responsive: ResponsiveValues, fontScale: Float) {
+private fun EmptyHistoryState(
+    modifier: Modifier = Modifier,
+    responsive: ResponsiveValues,
+    fontScale: Float,
+    onCreateReportClick: () -> Unit
+) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(responsive.screenPadding * 2)) {
             Icon(
@@ -179,6 +176,16 @@ private fun EmptyHistoryState(modifier: Modifier = Modifier, responsive: Respons
                 fontSize = (14 * fontScale).sp, color = OnSurfaceVariantColor,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
+            Spacer(modifier = Modifier.height(responsive.sectionSpacing))
+            Button(
+                onClick = onCreateReportClick,
+                modifier = Modifier.height(responsive.buttonHeight).fillMaxWidth(0.8f),
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = PrimaryColor)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(responsive.itemSpacing / 2))
+                Text("+ Create Report", fontWeight = FontWeight.Bold, color = Color.White)
+            }
         }
     }
 }
@@ -203,6 +210,7 @@ private fun HistoryTimelineList(
     responsive: ResponsiveValues,
     fontScale: Float
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = responsive.screenPadding, end = responsive.screenPadding, top = responsive.itemSpacing / 2, bottom = responsive.buttonHeight * 2),
@@ -226,32 +234,10 @@ private fun HistoryTimelineList(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "Observation archive for Sector 4.",
+                        "Your saved weather observations.",
                         fontSize = (14 * fontScale).sp,
                         color = OnSurfaceVariantColor
                     )
-                }
-                Surface(
-                    color = WeatherSnapColors.SurfaceContainerHigh,
-                    shape = RoundedCornerShape(8.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, OutlineVariantColor.copy(alpha = 0.3f)),
-                    modifier = Modifier.size(responsive.touchTargetMin).clickable { }
-                ) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        // Custom filter icon — 3 horizontal lines of decreasing width
-                        androidx.compose.foundation.Canvas(modifier = Modifier.size(responsive.iconSize)) {
-                            val w = size.width
-                            val h = size.height
-                            val stroke = 2.dp.toPx()
-                            val color = OnSurfaceColor
-                            // Line 1 — full width
-                            drawLine(color, start = androidx.compose.ui.geometry.Offset(0f, h * 0.2f), end = androidx.compose.ui.geometry.Offset(w, h * 0.2f), strokeWidth = stroke)
-                            // Line 2 — 70% width, centred
-                            drawLine(color, start = androidx.compose.ui.geometry.Offset(w * 0.15f, h * 0.5f), end = androidx.compose.ui.geometry.Offset(w * 0.85f, h * 0.5f), strokeWidth = stroke)
-                            // Line 3 — 40% width, centred
-                            drawLine(color, start = androidx.compose.ui.geometry.Offset(w * 0.30f, h * 0.8f), end = androidx.compose.ui.geometry.Offset(w * 0.70f, h * 0.8f), strokeWidth = stroke)
-                        }
-                    }
                 }
             }
         }
@@ -267,43 +253,23 @@ private fun HistoryTimelineList(
             )
         }
 
-        // Load older reports + FAB — side by side
+        // Load older reports (FAB removed as requested)
         if (snaps.isNotEmpty()) {
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = responsive.itemSpacing, bottom = responsive.itemSpacing),
-                    horizontalArrangement = Arrangement.spacedBy(responsive.gridGap),
+                    horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Load Older Reports button — takes remaining space
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(responsive.buttonHeight)
-                            .clickable { },
-                        color = WeatherSnapColors.SurfaceContainerHigh,
-                        shape = RoundedCornerShape(responsive.cardCornerRadius / 1.5f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, OutlineVariantColor.copy(alpha = 0.5f))
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = OnSurfaceVariantColor, modifier = Modifier.size(responsive.iconSize))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                "Load Older Reports",
-                                fontSize = (13 * fontScale).sp,
-                                color = OnSurfaceVariantColor,
-                                fontWeight = FontWeight.Medium
-                            )
+                    LoadOlderReportsButton(
+                        responsive = responsive, 
+                        fontScale = fontScale,
+                        onClick = {
+                            android.widget.Toast.makeText(context, "All available reports are already loaded.", android.widget.Toast.LENGTH_SHORT).show()
                         }
-                    }
-                    // FAB — fixed circle
-                    CreateReportFab(onClick = onCreateReportClick, responsive = responsive)
+                    )
                 }
             }
         }
@@ -311,12 +277,13 @@ private fun HistoryTimelineList(
 }
 
 @Composable
-private fun LoadOlderReportsButton(modifier: Modifier = Modifier, responsive: ResponsiveValues, fontScale: Float) {
+private fun LoadOlderReportsButton(modifier: Modifier = Modifier, responsive: ResponsiveValues, fontScale: Float, onClick: () -> Unit) {
     Surface(
         modifier = modifier,
         color = Color.Transparent,
         border = androidx.compose.foundation.BorderStroke(1.dp, OutlineVariantColor),
-        shape = RoundedCornerShape(responsive.cardCornerRadius / 1.5f)
+        shape = RoundedCornerShape(responsive.cardCornerRadius / 1.5f),
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier.padding(horizontal = responsive.cardPadding, vertical = responsive.itemSpacing / 2),

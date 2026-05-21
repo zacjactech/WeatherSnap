@@ -8,8 +8,8 @@ import com.weather.core.model.LocationSearchResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,7 +17,7 @@ import javax.inject.Singleton
 class CitySuggestionCacheRepository @Inject constructor(
     private val citySuggestionCacheDao: CitySuggestionCacheDao,
     private val dispatcherProvider: DispatcherProvider,
-    private val json: Json
+    private val gson: Gson
 ) {
     companion object {
         private const val CACHE_TTL_MS = 30 * 60 * 1000L // 30 minutes
@@ -33,7 +33,8 @@ class CitySuggestionCacheRepository @Inject constructor(
             val cache = citySuggestionCacheDao.getCachedSuggestion(normalizedQuery)
             
             if (cache != null && !isCacheExpired(cache.cachedAt)) {
-                val results = json.decodeFromString<List<LocationSearchResult>>(cache.resultsJson)
+                val type = object : TypeToken<List<LocationSearchResult>>() {}.type
+                val results = gson.fromJson<List<LocationSearchResult>>(cache.resultsJson, type)
                 Result.Success(results)
             } else {
                 Result.Error(Exception("Cache miss or expired"))
@@ -46,7 +47,7 @@ class CitySuggestionCacheRepository @Inject constructor(
     suspend fun cacheSuggestions(query: String, results: List<LocationSearchResult>) {
         try {
             val normalizedQuery = normalizeQuery(query)
-            val resultsJson = json.encodeToString(results)
+            val resultsJson = gson.toJson(results)
             val cache = CitySuggestionCacheEntity(
                 normalizedQuery = normalizedQuery,
                 resultsJson = resultsJson,

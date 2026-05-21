@@ -1,8 +1,8 @@
 package com.weather.core.model
 
-import kotlinx.serialization.Serializable
 
-@Serializable
+
+
 data class WeatherSnap(
     val id: String,
     val telemetry: WeatherTelemetry?,

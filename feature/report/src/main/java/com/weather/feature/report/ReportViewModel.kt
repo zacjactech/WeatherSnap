@@ -34,6 +34,9 @@ class ReportViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<ReportUiState>(ReportUiState.Idle)
     val uiState: StateFlow<ReportUiState> = _uiState.asStateFlow()
 
+    private val _isAutoSaving = MutableStateFlow(false)
+    val isAutoSaving: StateFlow<Boolean> = _isAutoSaving.asStateFlow()
+
     private var activeDraft: WeatherSnap? = null
     private var locationName: String? = null
     
@@ -164,7 +167,10 @@ class ReportViewModel @Inject constructor(
         activeDraft = updated
         _uiState.value = ReportUiState.Drafting(updated, locationName)
         viewModelScope.launch(dispatcherProvider.io) {
+            _isAutoSaving.value = true
             saveWeatherSnapDraftUseCase(updated)
+            kotlinx.coroutines.delay(500) // Add a small delay so the text is visible
+            _isAutoSaving.value = false
         }
     }
 

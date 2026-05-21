@@ -57,8 +57,7 @@ import com.weather.core.designsystem.theme.WeatherSnapColors
 enum class WeatherSnapTab {
     Home,
     Camera,
-    Reports,
-    Settings
+    Reports
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,11 +65,12 @@ enum class WeatherSnapTab {
 fun WeatherSnapTopBar(
     title: String = "WeatherSnap",
     showSearch: Boolean = true,
-    showProfile: Boolean = true,
+    showProfile: Boolean = false,
     showOverflow: Boolean = false,
     profileUrl: String? = null,
     onSearchClick: () -> Unit = {},
     onOverflowClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
     action: (@Composable () -> Unit)? = null,
     responsive: ResponsiveValues? = null
 ) {
@@ -117,6 +117,7 @@ fun WeatherSnapTopBar(
                         .size(avatarSize)
                         .clip(CircleShape)
                         .background(WeatherSnapColors.SurfaceContainerHigh)
+                        .clickable(onClick = onProfileClick)
                         .border(1.dp, OutlineVariantColor.copy(alpha = 0.4f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
@@ -149,7 +150,6 @@ fun WeatherSnapBottomNav(
     onNavigateToHome: () -> Unit,
     onNavigateToCamera: () -> Unit,
     onNavigateToReports: () -> Unit,
-    onNavigateToSettings: () -> Unit,
     responsive: ResponsiveValues? = null
 ) {
     val navPadding = responsive?.itemSpacing ?: 10.dp
@@ -203,17 +203,6 @@ fun WeatherSnapBottomNav(
                 icon = Icons.Default.Assignment,
                 label = "Reports",
                 onClick = onNavigateToReports,
-                iconSize = navIconSize,
-                labelSize = navLabelSize,
-                itemPadding = navItemPadding,
-                cornerRadius = navCorner
-            )
-            WeatherSnapBottomNavItem(
-                tab = WeatherSnapTab.Settings,
-                selectedTab = selectedTab,
-                icon = Icons.Default.Settings,
-                label = "Settings",
-                onClick = onNavigateToSettings,
                 iconSize = navIconSize,
                 labelSize = navLabelSize,
                 itemPadding = navItemPadding,

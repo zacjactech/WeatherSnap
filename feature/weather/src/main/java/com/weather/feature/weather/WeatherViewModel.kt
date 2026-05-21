@@ -4,10 +4,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.weather.core.common.Result
+import com.weather.core.datastore.SettingsRepository
 import com.weather.core.domain.usecase.GetWeatherTelemetryUseCase
 import com.weather.core.domain.usecase.SaveWeatherDraftUseCase
 import com.weather.core.domain.usecase.SearchCitiesUseCase
 import com.weather.core.model.LocationSearchResult
+import com.weather.core.model.UserSettings
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +30,7 @@ class WeatherViewModel @Inject constructor(
     private val getWeatherTelemetryUseCase: GetWeatherTelemetryUseCase,
     private val searchCitiesUseCase: SearchCitiesUseCase,
     private val saveWeatherDraftUseCase: SaveWeatherDraftUseCase,
+    private val settingsRepository: SettingsRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -67,17 +70,21 @@ class WeatherViewModel @Inject constructor(
      * at subscribe time inside a [flatMapLatest] on [currentLatitude], resulting in
      * API calls with a mismatched lat/lon pair when both are updated simultaneously.
      */
-    val uiState: StateFlow<WeatherUiState> = combine(currentLatitude, currentLongitude) { lat, lon ->
-            lat to lon
-        }
+    val uiState: StateFlow<WeatherUiState> = combine(
+        currentLatitude,
+        currentLongitude,
+        settingsRepository.settingsFlow
+    ) { lat, lon, settings ->
+        Triple(lat, lon, settings)
+    }
         .distinctUntilChanged()
-        .flatMapLatest { (lat, lon) ->
+        .flatMapLatest { (lat, lon, settings) ->
             getWeatherTelemetryUseCase(lat, lon).map { result ->
                 when (result) {
                     is Result.Loading -> WeatherUiState.Loading
                     is Result.Success -> {
                         _currentTelemetry.value = result.data
-                        WeatherUiState.Success(result.data)
+                        WeatherUiState.Success(result.data, settings)
                     }
                     is Result.Error -> WeatherUiState.Error(
                         result.exception.message ?: "Failed to retrieve location weather telemetry."

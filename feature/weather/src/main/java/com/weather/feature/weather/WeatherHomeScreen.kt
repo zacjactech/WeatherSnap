@@ -44,6 +44,7 @@ import com.weather.core.designsystem.component.WeatherSnapTab
 import com.weather.core.designsystem.responsive.*
 import com.weather.core.designsystem.theme.*
 import com.weather.core.model.LocationSearchResult
+import com.weather.core.model.UserSettings
 import com.weather.core.model.WeatherCondition
 import com.weather.core.model.WeatherTelemetry
 import coil.compose.AsyncImage
@@ -58,8 +59,7 @@ fun WeatherHomeRoute(
     viewModel: WeatherViewModel = hiltViewModel(),
     onCreateReportClicked: () -> Unit,
     onNavigateToCamera: () -> Unit = {},
-    onNavigateToReports: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {}
+    onNavigateToReports: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -81,8 +81,7 @@ fun WeatherHomeRoute(
         },
         onTabSelected = viewModel::selectTab,
         onNavigateToCamera = onNavigateToCamera,
-        onNavigateToReports = onNavigateToReports,
-        onNavigateToSettings = onNavigateToSettings
+        onNavigateToReports = onNavigateToReports
     )
 }
 
@@ -99,8 +98,7 @@ fun WeatherHomeScreen(
     onCreateReportClicked: () -> Unit,
     onTabSelected: (Int) -> Unit,
     onNavigateToCamera: () -> Unit = {},
-    onNavigateToReports: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {}
+    onNavigateToReports: () -> Unit = {}
 ) {
     val activity = LocalContext.current as? androidx.activity.ComponentActivity
         ?: return
@@ -115,7 +113,8 @@ fun WeatherHomeScreen(
     Scaffold(
         topBar = {
             WeatherSnapTopBar(
-                responsive = responsive
+                responsive = responsive,
+                showProfile = false
             )
         },
         bottomBar = {
@@ -124,7 +123,6 @@ fun WeatherHomeScreen(
                 onNavigateToHome = { onTabSelected(0) },
                 onNavigateToCamera = onNavigateToCamera,
                 onNavigateToReports = onNavigateToReports,
-                onNavigateToSettings = onNavigateToSettings,
                 responsive = responsive
             )
         },
@@ -153,7 +151,12 @@ fun WeatherHomeScreen(
                 exit = fadeOut()
             ) {
                 Box(modifier = Modifier.padding(horizontal = responsive.screenPadding, vertical = responsive.sectionSpacing)) {
-                    MetricsGrid(telemetry = (uiState as? WeatherUiState.Success)?.telemetry, responsive = responsive)
+                    val successState = uiState as? WeatherUiState.Success
+                    MetricsGrid(
+                        telemetry = successState?.telemetry,
+                        userSettings = successState?.userSettings,
+                        responsive = responsive
+                    )
                 }
             }
 
@@ -248,7 +251,12 @@ private fun HeroSection(
                 }
             }
             is WeatherUiState.Success -> {
-                WeatherDisplay(telemetry = uiState.telemetry, locationName = locationName, fontScale = fontScale)
+                WeatherDisplay(
+                    telemetry = uiState.telemetry,
+                    userSettings = uiState.userSettings,
+                    locationName = locationName,
+                    fontScale = fontScale
+                )
             }
         }
 
@@ -265,7 +273,7 @@ private fun HeroSection(
 }
 
 @Composable
-private fun WeatherDisplay(telemetry: WeatherTelemetry, locationName: String, fontScale: Float) {
+private fun WeatherDisplay(telemetry: WeatherTelemetry, userSettings: UserSettings, locationName: String, fontScale: Float) {
     val displayName = locationName.ifEmpty { "Seattle, WA" }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -294,7 +302,7 @@ private fun WeatherDisplay(telemetry: WeatherTelemetry, locationName: String, fo
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "Field Station 04",
+                text = locationName.ifEmpty { "Current Location" },
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontSize = (15 * fontScale).sp,
                     fontWeight = FontWeight.Medium,
@@ -308,12 +316,20 @@ private fun WeatherDisplay(telemetry: WeatherTelemetry, locationName: String, fo
             )
         }
         Spacer(modifier = Modifier.height(10.dp))
+        val currentTemp = if (userSettings.useFahrenheit) {
+            telemetry.temperatureCelsius * 9/5 + 32
+        } else {
+            telemetry.temperatureCelsius
+        }.toInt()
+        
+        val tempSymbol = if (userSettings.useFahrenheit) "°F" else "°C"
+
         Row(
             verticalAlignment = Alignment.Top,
             modifier = Modifier.padding(start = 10.dp)
         ) {
             Text(
-                text = "${telemetry.temperatureCelsius.toInt()}",
+                text = "$currentTemp",
                 style = MaterialTheme.typography.displayLarge.copy(
                     fontSize = (78 * fontScale).sp,
                     shadow = Shadow(
@@ -325,7 +341,7 @@ private fun WeatherDisplay(telemetry: WeatherTelemetry, locationName: String, fo
                 color = PrimaryColor
             )
             Text(
-                text = "°C",
+                text = tempSymbol,
                 style = MaterialTheme.typography.displayLarge.copy(
                     fontSize = (23 * fontScale).sp,
                     fontWeight = FontWeight.SemiBold,
@@ -360,22 +376,7 @@ private fun WeatherDisplay(telemetry: WeatherTelemetry, locationName: String, fo
                 )
             }
             
-            val currentTemp = telemetry.temperatureCelsius.toInt()
-            val highTemp = currentTemp + 2
-            val lowTemp = currentTemp - 3
-            Text(
-                text = "H: ${highTemp}° L: ${lowTemp}°",
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = (14 * fontScale).sp,
-                    fontWeight = FontWeight.Medium,
-                    shadow = Shadow(
-                        color = Color.Black.copy(alpha = 0.5f),
-                        offset = androidx.compose.ui.geometry.Offset(0f, 2f),
-                        blurRadius = 4f
-                    )
-                ),
-                color = OnSurfaceVariantColor
-            )
+            // High/Low temperatures removed as they are not provided by current telemetry and are not required.
         }
     }
 }
@@ -432,7 +433,24 @@ private fun SearchBarOverlay(
         )
 
         AnimatedVisibility(
-            visible = searchQuery.isNotEmpty() && searchResults is Result.Success
+            visible = searchQuery.isNotEmpty() && searchQuery.length <= 2
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(SurfaceColor, RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp))
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Enter more than 2 letters to start city suggestions.",
+                    color = OnSurfaceVariantColor,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = searchQuery.length > 2 && searchResults is Result.Success
         ) {
             val results = (searchResults as? Result.Success)?.data ?: emptyList()
             if (results.isNotEmpty()) {
@@ -461,16 +479,30 @@ private fun SearchBarOverlay(
 }
 
 @Composable
-private fun MetricsGrid(telemetry: WeatherTelemetry?, responsive: ResponsiveValues) {
-    if (telemetry == null) return
+private fun MetricsGrid(telemetry: WeatherTelemetry?, userSettings: UserSettings?, responsive: ResponsiveValues) {
+    if (telemetry == null || userSettings == null) return
 
-    val visibilityVal = when (telemetry.condition) {
-        com.weather.core.model.WeatherCondition.RAIN,
-        com.weather.core.model.WeatherCondition.SNOW,
-        com.weather.core.model.WeatherCondition.THUNDERSTORM -> "2.4"
-        com.weather.core.model.WeatherCondition.CLOUDY -> "6.0"
-        else -> "10.0"
+    val windSpeedVal = when (userSettings.windSpeedUnit) {
+        com.weather.core.model.WindSpeedUnit.KMH -> telemetry.windSpeedKph.toInt().toString()
+        com.weather.core.model.WindSpeedUnit.MPH -> (telemetry.windSpeedKph * 0.621371).toInt().toString()
+        com.weather.core.model.WindSpeedUnit.MS -> (telemetry.windSpeedKph / 3.6).toInt().toString()
     }
+    
+    val windSpeedUnitLabel = when (userSettings.windSpeedUnit) {
+        com.weather.core.model.WindSpeedUnit.KMH -> "km/h"
+        com.weather.core.model.WindSpeedUnit.MPH -> "mph"
+        com.weather.core.model.WindSpeedUnit.MS -> "m/s"
+    }
+    
+    val pressureVal = telemetry.pressure ?: 1008.0
+    val pressureDisplay = when (userSettings.pressureUnit) {
+        com.weather.core.model.PressureUnit.HPA -> pressureVal.toInt().toString()
+        com.weather.core.model.PressureUnit.INHG -> (pressureVal * 0.02953).format(2)
+        com.weather.core.model.PressureUnit.MMHG -> (pressureVal * 0.750062).toInt().toString()
+    }
+    val pressureUnitLabel = userSettings.pressureUnit.label
+
+    val visibilityVal = telemetry.visibilityKm?.format(1) ?: "--"
     
     Column(modifier = Modifier.padding(top = responsive.itemSpacing, bottom = responsive.itemSpacing / 2)) {
         Text(
@@ -490,15 +522,15 @@ private fun MetricsGrid(telemetry: WeatherTelemetry?, responsive: ResponsiveValu
                         modifier = Modifier.weight(1f),
                         icon = { DropletIcon(tint = OnSurfaceVariantColor) },
                         title = "HUMIDITY",
-                        value = "${telemetry.humidityPercentage ?: 94}%",
+                        value = telemetry.humidityPercentage?.let { "$it%" } ?: "--",
                         responsive = responsive
                     )
                     MetricCard(
                         modifier = Modifier.weight(1f),
                         icon = { WindIcon(tint = OnSurfaceVariantColor) },
                         title = "WIND",
-                        value = "${telemetry.windSpeedKph.toInt()}",
-                        unit = "km/h NW",
+                        value = windSpeedVal,
+                        unit = windSpeedUnitLabel,
                         responsive = responsive
                     )
                 }
@@ -510,8 +542,8 @@ private fun MetricsGrid(telemetry: WeatherTelemetry?, responsive: ResponsiveValu
                         modifier = Modifier.weight(1f),
                         icon = { PressureIcon(tint = OnSurfaceVariantColor) },
                         title = "PRESSURE",
-                        value = "${telemetry.pressure?.toInt() ?: 1008}",
-                        unit = "hPa",
+                        value = pressureDisplay,
+                        unit = pressureUnitLabel,
                         responsive = responsive
                     )
                     MetricCard(
@@ -533,23 +565,23 @@ private fun MetricsGrid(telemetry: WeatherTelemetry?, responsive: ResponsiveValu
                     modifier = Modifier.weight(1f),
                     icon = { DropletIcon(tint = OnSurfaceVariantColor) },
                     title = "HUMIDITY",
-                    value = "${telemetry.humidityPercentage ?: 94}%",
+                    value = telemetry.humidityPercentage?.let { "$it%" } ?: "--",
                     responsive = responsive
                 )
                 MetricCard(
                     modifier = Modifier.weight(1f),
                     icon = { WindIcon(tint = OnSurfaceVariantColor) },
                     title = "WIND",
-                    value = "${telemetry.windSpeedKph.toInt()}",
-                    unit = "km/h NW",
+                    value = windSpeedVal,
+                    unit = windSpeedUnitLabel,
                     responsive = responsive
                 )
                 MetricCard(
                     modifier = Modifier.weight(1f),
                     icon = { PressureIcon(tint = OnSurfaceVariantColor) },
                     title = "PRESSURE",
-                    value = "${telemetry.pressure?.toInt() ?: 1008}",
-                    unit = "hPa",
+                    value = pressureDisplay,
+                    unit = pressureUnitLabel,
                     responsive = responsive
                 )
                 MetricCard(
@@ -937,6 +969,9 @@ private fun getBackgroundImageUrlForCondition(condition: com.weather.core.model.
         com.weather.core.model.WeatherCondition.RAIN -> "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM2QzM2x6eHV6OGw1bWVwaDBpeDdtNnh6NWVnbWJtbHF1ZGhqYWF0biZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/tqfS3XlImS4y8hC62h/giphy.gif"
         com.weather.core.model.WeatherCondition.SNOW -> "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMjRteTFweDBybzNsOXhhZDFkODFsc3J4NGUydzh1NXhkMnkybHZjZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/7BgpK5cAmSKQ/giphy.gif"
         com.weather.core.model.WeatherCondition.THUNDERSTORM -> "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNG11eWt0Y21kdjAyd2htOHU0ZjIzMDkyMms5NXY4cjNxMHByNnl1dSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26uf5HjasT04aWk3m/giphy.gif"
+        com.weather.core.model.WeatherCondition.FOG -> "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExc29wMnUxd2FvdG9iNnk4ZTNscDJ0MzFpMjN5MHM3bjlkdmwzZXZuNiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/K9M412L07xWdY/giphy.gif"
+        com.weather.core.model.WeatherCondition.WINDY -> "https://media.tenor.com/-37Ai4vrR2oAAAAS/hurricane-windy.gif"
+        com.weather.core.model.WeatherCondition.UNKNOWN -> "https://media.tenor.com/BobCemm6LEMAAAAS/maria-tran-sun.gif"
         else -> "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExc29wMnUxd2FvdG9iNnk4ZTNscDJ0MzFpMjN5MHM3bjlkdmwzZXZuNiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/u01ioCe6G8URG/giphy.gif"
     }
 }

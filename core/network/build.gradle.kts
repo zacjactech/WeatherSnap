@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
 }
@@ -45,10 +44,11 @@ dependencies {
 
     // Retrofit & OkHttp Networking
     implementation(libs.retrofit.core)
-    implementation(libs.retrofit.kotlin.serialization)
+    implementation(libs.retrofit.gson)
+    implementation(libs.gson)
     implementation(libs.okhttp.core)
     implementation(libs.okhttp.logging)
-    implementation(libs.kotlinx.serialization.json)
+
 
     // Hilt Dependency Injection
     implementation(libs.hilt.android)

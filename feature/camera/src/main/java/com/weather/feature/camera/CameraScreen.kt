@@ -211,6 +211,17 @@ private fun FullscreenCameraPreview(
 
         TechnicalGridOverlay(modifier = Modifier.matchParentSize())
 
+        // ── Title: Custom Camera ─────────────────────────────────────────
+        Text(
+            text = "Custom Camera",
+            fontSize = (16 * fontScale).sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = responsive.itemSpacing / 2)
+        )
+
         // ── Top Bar: Close | GPS chip | Flash ────────────────────────────
         Row(
             modifier = Modifier
@@ -844,21 +855,27 @@ private fun CameraErrorOverlay(
             .background(WeatherSnapColors.Background),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(responsive.screenPadding * 2)
+        androidx.compose.material3.Surface(
+            modifier = Modifier.padding(responsive.screenPadding * 2),
+            shape = RoundedCornerShape(16.dp),
+            color = WeatherSnapColors.SurfaceContainerHigh,
+            border = androidx.compose.foundation.BorderStroke(1.dp, OutlineVariantColor)
         ) {
-            Icon(Icons.Default.Warning, contentDescription = null, tint = WeatherSnapColors.Error, modifier = Modifier.size(responsive.avatarSize))
-            Spacer(modifier = Modifier.height(responsive.itemSpacing))
-            Text(message, color = WeatherSnapColors.Error, textAlign = TextAlign.Center, fontSize = 15.sp)
-            Spacer(modifier = Modifier.height(responsive.sectionSpacing))
-            Row(horizontalArrangement = Arrangement.spacedBy(responsive.gridGap)) {
-                OutlinedButton(onClick = onNavigateBack) { Text("Go Back", color = OnSurfaceColor) }
-                Button(
-                    onClick = onRetryClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A90E2))
-                ) { Text("Retry") }
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(responsive.screenPadding * 2)
+            ) {
+                Icon(Icons.Default.Warning, contentDescription = null, tint = WeatherSnapColors.Error, modifier = Modifier.size(responsive.avatarSize))
+                Spacer(modifier = Modifier.height(responsive.itemSpacing))
+                Text(message, color = WeatherSnapColors.Error, textAlign = TextAlign.Center, fontSize = 15.sp)
+                Spacer(modifier = Modifier.height(responsive.sectionSpacing))
+                Row(horizontalArrangement = Arrangement.spacedBy(responsive.gridGap)) {
+                    Button(
+                        onClick = onNavigateBack,
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
+                    ) { Text("Go to Home", fontWeight = FontWeight.Bold) }
+                }
             }
         }
     }

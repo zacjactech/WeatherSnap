@@ -1,8 +1,8 @@
 package com.weather.core.network.model
 
-import kotlinx.serialization.Serializable
 
-@Serializable
+
+
 data class NetworkWeatherSnapRequest(
     val id: String,
     val temperatureCelsius: Double?,

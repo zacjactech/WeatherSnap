@@ -11,8 +11,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import com.google.gson.Gson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -22,7 +21,7 @@ import org.junit.Test
 class CitySuggestionCacheRepositoryTest {
 
     private lateinit var dao: CitySuggestionCacheDao
-    private lateinit var json: Json
+    private lateinit var gson: Gson
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var repository: CitySuggestionCacheRepository
     private val testDispatcher = StandardTestDispatcher()
@@ -30,7 +29,7 @@ class CitySuggestionCacheRepositoryTest {
     @Before
     fun setup() {
         dao = mockk(relaxed = true)
-        json = Json { ignoreUnknownKeys = true }
+        gson = Gson()
         dispatcherProvider = object : DispatcherProvider {
             override val main: CoroutineDispatcher = testDispatcher
             override val io: CoroutineDispatcher = testDispatcher
@@ -38,7 +37,7 @@ class CitySuggestionCacheRepositoryTest {
             override val unconfined: CoroutineDispatcher = testDispatcher
         }
 
-        repository = CitySuggestionCacheRepository(dao, dispatcherProvider, json)
+        repository = CitySuggestionCacheRepository(dao, dispatcherProvider, gson)
     }
 
     @Test
@@ -57,7 +56,7 @@ class CitySuggestionCacheRepositoryTest {
         )
         val cache = CitySuggestionCacheEntity(
             normalizedQuery = query,
-            resultsJson = json.encodeToString(results),
+            resultsJson = gson.toJson(results),
             cachedAt = System.currentTimeMillis() - 5000 // 5 seconds ago
         )
 

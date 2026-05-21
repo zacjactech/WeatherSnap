@@ -11,7 +11,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import kotlinx.serialization.json.Json
+import com.google.gson.Gson
 import javax.inject.Singleton
 
 @Module
@@ -20,11 +20,7 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideJson(): Json = Json {
-        ignoreUnknownKeys = true
-        coerceInputValues = true
-        encodeDefaults = true
-    }
+    fun provideGson(): Gson = Gson()
 
     @Provides
     @Singleton
@@ -37,6 +33,7 @@ object DatabaseModule {
             "weather-snap-database"
         )
         .addMigrations(WeatherDatabase.MIGRATION_4_5)
+        .fallbackToDestructiveMigration()
         .build()
     }
 

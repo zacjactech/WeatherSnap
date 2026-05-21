@@ -37,7 +37,7 @@ dependencies {
     ksp(libs.room.compiler)
 
     // Serialization
-    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.gson)
 
     // Hilt
     implementation(libs.hilt.android)
@@ -48,4 +48,5 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
+    androidTestImplementation(libs.room.testing)
 }

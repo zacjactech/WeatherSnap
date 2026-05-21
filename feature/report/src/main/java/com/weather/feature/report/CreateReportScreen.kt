@@ -334,18 +334,31 @@ fun CreateReportRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val draftId by viewModel.draftId.collectAsStateWithLifecycle()
+    val isAutoSaving by viewModel.isAutoSaving.collectAsStateWithLifecycle()
+
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     CreateReportScreen(
         uiState = uiState,
+        isAutoSaving = isAutoSaving,
         onNotesChange = viewModel::updateNotes,
         onAddPhotoClick = { draftId?.let { onNavigateToCamera(it) } },
         onDraftClick = {
+            android.widget.Toast.makeText(context, "Draft Saved", android.widget.Toast.LENGTH_SHORT).show()
             viewModel.saveDraft()
         },
         onTransmitClick = {
+            android.widget.Toast.makeText(context, "Report Transmitted", android.widget.Toast.LENGTH_SHORT).show()
             viewModel.submitSnap()
         },
-        onNavigateBack = onNavigateBack,
+        onNavigateBack = {
+            val draft = (uiState as? ReportUiState.Drafting)?.draft
+            if (draft != null && draft.notes.isEmpty() && draft.photo == null) {
+                viewModel.discardDraft()
+            } else {
+                onNavigateBack()
+            }
+        },
         onReportSaved = onReportSaved
     )
 }
@@ -354,6 +367,7 @@ fun CreateReportRoute(
 @Composable
 fun CreateReportScreen(
     uiState: ReportUiState,
+    isAutoSaving: Boolean,
     onNotesChange: (String) -> Unit,
     onAddPhotoClick: () -> Unit,
     onDraftClick: () -> Unit,
@@ -387,9 +401,7 @@ fun CreateReportScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* Sync status */ }) {
-                        Icon(Icons.Default.Sync, contentDescription = "Sync", tint = PrimaryColor)
-                    }
+                    // Empty actions for cleaner UI
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
@@ -402,6 +414,7 @@ fun CreateReportScreen(
             is ReportUiState.Drafting -> {
                 DraftingContent(
                     draft = uiState.draft,
+                    isAutoSaving = isAutoSaving,
                     locationName = uiState.locationName,
                     onNotesChange = onNotesChange,
                     onAddPhotoClick = onAddPhotoClick,
@@ -461,6 +474,7 @@ fun CreateReportScreen(
 @Composable
 private fun DraftingContent(
     draft: WeatherSnap,
+    isAutoSaving: Boolean,
     locationName: String?,
     onNotesChange: (String) -> Unit,
     onAddPhotoClick: () -> Unit,
@@ -498,11 +512,6 @@ private fun DraftingContent(
                         fontWeight = FontWeight.Bold,
                         color = OnSurfaceVariantColor,
                         letterSpacing = 1.2.sp
-                    )
-                    Text(
-                        if (draft.photo != null) "1/3 Attached" else "0/3 Attached",
-                        fontSize = (11 * fontScale).sp,
-                        color = PrimaryColor
                     )
                 }
 
@@ -661,25 +670,20 @@ private fun DraftingContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(responsive.gridGap)) {
-                            Icon(
-                                TagIcon,
-                                contentDescription = "Add tags",
-                                tint = OnSurfaceVariantColor,
-                                modifier = Modifier.size(responsive.iconSize).clickable { }
-                            )
-                            Icon(
-                                MicIcon,
-                                contentDescription = "Voice memo",
-                                tint = OnSurfaceVariantColor,
-                                modifier = Modifier.size(responsive.iconSize).clickable { }
+                            // Placeholder for future actions if needed
+                        }
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = isAutoSaving,
+                            enter = androidx.compose.animation.fadeIn(),
+                            exit = androidx.compose.animation.fadeOut()
+                        ) {
+                            Text(
+                                "Auto-saving...",
+                                color = OnSurfaceVariantColor,
+                                fontSize = (11 * fontScale).sp,
+                                fontWeight = FontWeight.Medium
                             )
                         }
-                        Text(
-                            "Auto-saving...",
-                            color = OnSurfaceVariantColor,
-                            fontSize = (11 * fontScale).sp,
-                            fontWeight = FontWeight.Medium
-                        )
                     }
                 }
             }
@@ -723,7 +727,7 @@ private fun DraftingContent(
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Barometer", fontSize = (11 * fontScale).sp, color = OnSurfaceVariantColor)
                             Text(
-                                "${draft.telemetry?.pressure?.toInt() ?: 1012} hPa",
+                                "${draft.telemetry?.pressure?.toInt()?.toString() ?: "--"} hPa",
                                 fontSize = (13 * fontScale).sp,
                                 color = OnSurfaceColor,
                                 fontWeight = FontWeight.Medium
@@ -923,7 +927,7 @@ private fun SnapshotTemperatureBlock(
             )
         }
         Text(
-            locationName ?: "Mt. Rainier Base Camp",
+            locationName ?: "Unknown Location",
             fontSize = (14 * fontScale).sp,
             color = OnSurfaceColor,
             fontWeight = FontWeight.Medium,
@@ -944,7 +948,11 @@ private fun SnapshotTelemetryChips(
         horizontalAlignment = Alignment.End
     ) {
         SnapshotTelemetryChip(icon = { Icon(WindIcon, contentDescription = null, tint = PrimaryColor, modifier = Modifier.size((14 * fontScale).dp)) }) {
-            Text("${telemetry.windSpeedKph.toInt()} km/h NW", fontSize = (11 * fontScale).sp, color = OnSurfaceColor, fontWeight = FontWeight.Medium)
+            val windDir = telemetry.windDirectionDegrees?.let { deg -> 
+                val dirs = arrayOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+                dirs[(((deg % 360) + 22.5) / 45.0).toInt().coerceIn(0, 7)]
+            } ?: "--"
+            Text("${telemetry.windSpeedKph.toInt()} km/h $windDir", fontSize = (11 * fontScale).sp, color = OnSurfaceColor, fontWeight = FontWeight.Medium)
         }
 
         telemetry.humidityPercentage?.let { humidity ->
@@ -975,7 +983,7 @@ private fun SnapshotTelemetryChip(
 }
 
 private fun estimateDraftElevation(telemetry: WeatherTelemetry?): String {
-    val pressure = telemetry?.pressure ?: return "1,440"
+    val pressure = telemetry?.pressure ?: return "--"
     val meters = ((1013.25 - pressure) * 8.5).toInt().coerceAtLeast(0)
     return "%,d".format(meters)
 }

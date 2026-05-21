@@ -56,6 +56,8 @@ class AndroidComposeConventionPlugin : Plugin<Project> {
                 add("implementation", libs.findLibrary("androidx.activity.compose").get())
                 add("implementation", libs.findLibrary("androidx.lifecycle.viewmodel.compose").get())
                 add("implementation", libs.findLibrary("androidx.lifecycle.runtime.compose").get())
+                add("androidTestImplementation", libs.findLibrary("compose.ui.test.junit4").get())
+                add("debugImplementation", libs.findLibrary("compose.ui.test.manifest").get())
             }
         }
     }

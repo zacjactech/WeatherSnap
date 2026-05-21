@@ -1,135 +1,53 @@
 # WeatherSnap 🌤️📸
 
-WeatherSnap is a modern, modular, production-grade Android application engineered with **Clean Architecture**, **SOLID Principles**, and an **Offline-First Resilience** paradigm. It allows location-aware coordinates lookup, image compression, and local telemetries sync with a remote database.
+WeatherSnap is a polished, production-grade Android application built to search live weather for cities, create custom weather reports with captured photos, and save them locally. It strictly adheres to modern Android architecture principles and is built entirely with Jetpack Compose.
 
----
-
-## 🏗️ Architectural Module Topology
-
-The project is structured into highly-encapsulated modules to enforce strict separation of concerns, accelerate Gradle build caching, and guarantee clean dependency boundaries.
-
-```mermaid
-graph TD
-    subgraph App Shell
-        app[":app"]
-    end
-
-    subgraph Feature Modules
-        weather[":feature:weather"]
-        report[":feature:report"]
-        camera[":feature:camera"]
-        history[":feature:history"]
-        settings[":feature:settings"]
-    end
-
-    subgraph Core Modules
-        domain[":core:domain"]
-        database[":core:database"]
-        network[":core:network"]
-        file[":core:file"]
-        designsystem[":core:designsystem"]
-        common[":core:common"]
-        model[":core:model"]
-    end
-
-    %% Application connections
-    app --> weather
-    app --> report
-    app --> camera
-    app --> history
-    app --> settings
-    app --> domain
-    app --> database
-    app --> network
-    app --> designsystem
-    app --> file
-
-    %% Features dependencies
-    weather --> domain
-    weather --> designsystem
-    weather --> common
-
-    report --> domain
-    report --> designsystem
-    report --> common
-
-    camera --> domain
-    camera --> designsystem
-    camera --> file
-    camera --> common
-
-    history --> domain
-    history --> designsystem
-    history --> common
-
-    settings --> domain
-    settings --> designsystem
-    settings --> common
-
-    %% Core dependencies
-    database --> domain
-    database --> model
-    database --> common
-
-    network --> domain
-    network --> model
-    network --> common
-
-    domain --> model
-    domain --> common
-
-    file --> common
-    designsystem --> common
-```
-
-### Module Responsibilities
-*   **`:app`**: Application shell. Configures Hilt-Work background sync worker scheduling, hosts `MainActivity` with Jetpack Navigation Compose, and declares full hardware/network permission manifests.
-*   **`:feature:X`**: Strictly isolated Compose feature layers containing views, StateFlow model streams, and ViewModels resilient to process death (`SavedStateHandle`).
-*   **`:core:domain`**: Pure Kotlin module containing business logic models, repository contracts, and isolated Use Case coordinators. Completely free of Android framework dependencies.
-*   **`:core:database`**: Local SQLite persistence layer via Room. Manages offline snapshots, persistent syncing queues, database-to-domain entities translation, and Hilt injection mapping.
-*   **`:core:network`**: Remote service interaction layer via Retrofit and OkHttp. Fetches live telemetry from the Open-Meteo API, handles connection state limits, and provides remote repository bindings.
-*   **`:core:file`**: Dynamic sandbox storage manager. Saves and downscales camera captures asynchronously on dedicated background thread pools (`DispatcherProvider.io`).
-*   **`:core:designsystem`**: Premium UI resources shell. Hosts color palettes, custom typography, hover transitions, and Android 12+ Monet dynamic material themes.
-*   **`:core:common`**: Shared utilities, reactive dispatchers mapping wrappers, and `UiState` definitions.
-
----
-
-## 🚀 Key Achievements & Technical Features
-
-- **Decoupled Background Threading**: Injected qualifiers via `DispatcherProvider.kt` structure clean coroutine scopes (`Default`, `IO`, `Main`).
-- **Reactive Stream Handling**: Stream states (`Loading`, `Success`, `Error`) are managed via custom flow conversion extensions.
-- **Offline Persistent Syncing**: SQLite records transit from `PENDING` $\rightarrow$ `SYNCING` $\rightarrow$ `COMPLETED` / `FAILED` status flags with background worker tasks managed by Room and Hilt-Work.
-- **Memory-Efficient Image Optimization**: Photos taken by the camera are downscaled asynchronously (target max $1920\times1080$) using memory-efficient byte buffers before disk serialization.
-- **No-Key Geocoding & Weather services**: Integrates directly with Open-Meteo APIs for weather and geocoding, requiring zero developer API keys to start.
-
----
-
-## 🛠️ Developer Setup & Getting Started
+## 🛠️ Setup & Run Instructions
 
 ### Prerequisites
-- JDK 17
-- Android SDK (API 34)
+*   **Android Studio** (Koala or newer recommended)
+*   **JDK 17**
+*   **Android SDK API 34**
+*   A physical device or an emulator running Android 8.0+ (API 26+)
 
-### Building the Project
-
-Run verification diagnostics and compilation with Gradle:
-```bash
-# Verify Gradle compilation success and run local unit tests
-./gradlew testDebugUnitTest
-
-# Assemble debug APK for hardware tests
-./gradlew assembleDebug
-```
+### Running the App
+1. Clone or unzip this repository.
+2. Open the project in Android Studio.
+3. Allow Gradle to sync. No external API keys are required (we use the free Open-Meteo API).
+4. Run the `:app` configuration targeting your connected device or emulator.
+5. Alternatively, run via terminal:
+   ```bash
+   ./gradlew assembleDebug
+   adb install app/build/outputs/apk/debug/app-debug.apk
+   ```
 
 ---
 
-## 🤖 Google Stitch MCP Integration
+## 🧠 Developer Judgment Challenge
 
-The workspace includes integration configs for the **Google Stitch MCP Server** inside `.vscode/mcp.json`.
+**The Challenge:**
+Protect the report creation flow from lifecycle and data-loss issues (e.g., rotating the device or backgrounding the app after capturing a photo and adding notes, but before hitting save). Duplicate reports must be avoided, weather snapshots must remain exact, and temporary image files must not leak.
 
-To configure your own key:
-1. Copy `.vscode/mcp.json.template` to `.vscode/mcp.json`.
-2. Replace `"YOUR_API_KEY_HERE"` with your active Google Developer API Key.
-3. Reload your VS Code developer window.
+**Our Approach: Database-Backed Drafts**
+Instead of relying solely on `SavedStateHandle` or `ViewModel` in-memory state, we implemented a robust **Offline-First Draft mechanism** utilizing Room Database as the single source of truth.
 
-*(Note: `.vscode/mcp.json` is gitignored to protect your credentials from leaking).*
+1. **Immediate Draft Creation:** When a user taps "Create Report", we immediately insert a `WeatherSnapEntity` into Room with a status of `DRAFT`. This snapshot contains the exact, frozen weather details at that millisecond.
+2. **Navigation by ID:** The `CreateReportScreen` and `CameraScreen` are driven by passing the unique `draft_id` via Jetpack Navigation parameters.
+3. **Reactive UI State:** The `ReportViewModel` loads the draft from Room into a `StateFlow`. When the user types notes or captures an image, the Room database is incrementally updated. If the device rotates, the app is killed, or it goes into the background, the UI instantly re-subscribes to the exact same `draft_id` upon recreation. No data is lost, and because it's the exact same row ID, no duplicates are ever created.
+4. **Finalizing:** When "Save" is clicked, we merely update the database row status from `DRAFT` to `SAVED` (or `PENDING` for sync simulation). 
+5. **No File Leaks:** If the user deletes or cancels a report, the `SnapDetailViewModel` commands the `FileStorageManager` to explicitly delete the local `File` paths associated with that draft before removing the DB record. Furthermore, orphaned `DRAFT` records (e.g., if the app is force-killed) are garbage-collected by the background `WeatherSyncWorker`.
+
+**Tradeoffs:**
+*   *Pros:* Extremely robust. Immune to process death (`ViewModel` clearing). Safely anchors large binary data (photos) to a persistent file path rather than keeping bitmaps in RAM during rotation.
+*   *Cons:* Slightly higher disk I/O overhead since we write to SQLite on text-field changes, but this is mitigated by running all operations on `Dispatchers.IO` to ensure UI threads remain perfectly smooth.
+
+---
+
+## 📦 Tech Stack
+*   **Kotlin & Coroutines/Flow** for asynchronous data streaming
+*   **Jetpack Compose** for all UI components
+*   **MVVM Architecture** enforced via Hilt Dependency Injection
+*   **Room Database** for local caching and Draft state
+*   **Retrofit & OkHttp** for networking and logging
+*   **CameraX** for the custom camera implementation
+*   **Material 3** for premium styling, typography, and color schemes

@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
@@ -49,17 +50,29 @@ import java.util.*
 @Composable
 fun ReportDetailRoute(
     viewModel: SnapDetailViewModel = hiltViewModel(),
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onEditClick: (String) -> Unit
 ) {
     val snap by viewModel.snap.collectAsStateWithLifecycle()
-    ReportDetailScreen(snap = snap, onNavigateBack = onNavigateBack)
+    ReportDetailScreen(
+        snap = snap,
+        onNavigateBack = onNavigateBack,
+        onEditClick = { snap?.id?.let { onEditClick(it) } },
+        onDeleteClick = {
+            viewModel.deleteSnap {
+                onNavigateBack()
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun ReportDetailScreen(
     snap: WeatherSnap?,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val activity = context as? androidx.activity.ComponentActivity
@@ -100,14 +113,62 @@ fun ReportDetailScreen(
             return
         }
 
+        val scrollState = rememberScrollState()
+        var showMenu by remember { mutableStateOf(false) }
+
         // ── Main scrollable content ─────────────────────────────────────
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
         ) {
             // Hero section
-            DetailHeroSection(snap = snap, responsive = responsive, fontScale = fontScale)
+            Box {
+                DetailHeroSection(snap = snap, responsive = responsive, fontScale = fontScale)
+                
+                // Top bar overlay
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = responsive.itemSpacing / 2, vertical = responsive.itemSpacing / 2),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = onNavigateBack,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.4f))
+                            .size(responsive.touchTargetMin)
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    }
+                    Box {
+                        IconButton(
+                            onClick = { showMenu = true },
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.4f))
+                                .size(responsive.touchTargetMin)
+                        ) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "More", tint = Color.White)
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Delete Report", color = WeatherSnapColors.Error) },
+                                onClick = {
+                                    showMenu = false
+                                    onDeleteClick()
+                                }
+                            )
+                        }
+                    }
+                }
+            }
 
             // Content cards
             Column(
@@ -117,65 +178,27 @@ fun ReportDetailScreen(
                     .padding(bottom = responsive.buttonHeight * 2),
                 verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing)
             ) {
-                Spacer(modifier = Modifier.height(responsive.itemSpacing / 4))
-
-                // Core temperature card
-                snap.telemetry?.let { telemetry ->
-                    CoreTempCard(telemetry = telemetry, responsive = responsive, fontScale = fontScale)
-                }
-
-                // Wind + Pressure row
-                snap.telemetry?.let { telemetry ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(responsive.itemSpacing)
-                    ) {
-                        WindCard(telemetry = telemetry, modifier = Modifier.weight(1f), responsive = responsive, fontScale = fontScale)
-                        PressureCard(telemetry = telemetry, modifier = Modifier.weight(1f), responsive = responsive, fontScale = fontScale)
-                    }
-                }
-
-                // Field Observer Notes
-                FieldNotesCard(snap = snap, responsive = responsive, fontScale = fontScale)
-
-                // Metadata grid
+                MetricsGrid(telemetry = snap.telemetry, responsive = responsive, fontScale = fontScale)
+                NotesCard(snap = snap, responsive = responsive, fontScale = fontScale, onEditClick = onEditClick)
                 snap.telemetry?.let { telemetry ->
                     MetadataCard(snap = snap, telemetry = telemetry, responsive = responsive, fontScale = fontScale)
                 }
             }
         }
+    }
+}
 
-        // ── Floating top bar: Back | Title | More ───────────────────────
+@Composable
+private fun MetricsGrid(telemetry: WeatherTelemetry?, responsive: ResponsiveValues, fontScale: Float) {
+    telemetry?.let {
+        CoreTempCard(telemetry = it, responsive = responsive, fontScale = fontScale)
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(WeatherSnapColors.Background)
-                .statusBarsPadding()
-                .padding(horizontal = responsive.itemSpacing / 2, vertical = responsive.itemSpacing / 2),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(responsive.itemSpacing)
         ) {
-            IconButton(
-                onClick = onNavigateBack,
-                modifier = Modifier.size(responsive.touchTargetMin)
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-            }
-            Text(
-                "Observation Details",
-                color = PrimaryColor,
-                fontSize = (18 * fontScale).sp,
-                fontWeight = FontWeight.Medium
-            )
-            IconButton(
-                onClick = { /* options */ },
-                modifier = Modifier.size(responsive.touchTargetMin)
-            ) {
-                Icon(Icons.Default.MoreVert, contentDescription = "More", tint = Color.White)
-            }
+            WindCard(telemetry = it, modifier = Modifier.weight(1f), responsive = responsive, fontScale = fontScale)
+            PressureCard(telemetry = it, modifier = Modifier.weight(1f), responsive = responsive, fontScale = fontScale)
         }
-
-        // Empty space for sticky bottom action bar removed to eliminate dummy buttons
     }
 }
 
@@ -189,10 +212,7 @@ private fun DetailHeroSection(snap: WeatherSnap, responsive: ResponsiveValues, f
             .fillMaxWidth()
             .height(responsive.detailHeroHeight * 1.15f)
     ) {
-        // Photo or condition gradient
         val photoPath = snap.photo?.filePath
-
-        // Condition-based atmospheric gradient
         val gradientColors = snap.heroGradient()
         Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(gradientColors)))
 
@@ -208,7 +228,6 @@ private fun DetailHeroSection(snap: WeatherSnap, responsive: ResponsiveValues, f
             )
         }
 
-        // Scrim
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -219,84 +238,72 @@ private fun DetailHeroSection(snap: WeatherSnap, responsive: ResponsiveValues, f
                 )
         )
 
-        // Hero content overlay
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(bottom = responsive.screenPadding + 4.dp, start = responsive.screenPadding, end = responsive.screenPadding, top = responsive.screenPadding),
         ) {
-            // Severity + Verified badges
             Row(
                 horizontalArrangement = Arrangement.spacedBy(responsive.gridGap / 2),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (true) {
-                    Surface(
-                        shape = RoundedCornerShape(50.dp),
-                        color = if (severity == Severity.CRITICAL)
-                            WeatherSnapColors.Tertiary
-                        else WeatherSnapColors.PrimaryContainer.copy(alpha = 0.9f)
+                Surface(
+                    shape = RoundedCornerShape(50.dp),
+                    color = if (severity == Severity.CRITICAL)
+                        WeatherSnapColors.Tertiary
+                    else WeatherSnapColors.PrimaryContainer.copy(alpha = 0.9f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 0.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 0.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(5.dp)
-                        ) {
-                            // Icon based on severity
-                            Icon(
-                                if (severity == Severity.CRITICAL) Icons.Default.Warning else Icons.Default.Info,
-                                contentDescription = null,
-                                tint = if (severity == Severity.CRITICAL) Color.Black else Color.White,
-                                modifier = Modifier.size(responsive.iconSize * 0.6f)
-                            )
-                            Text(
-                                text = "SEVERE",
-                                fontSize = (9 * fontScale).sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (severity == Severity.CRITICAL) Color.Black else Color.White,
-                                letterSpacing = (0.5 * fontScale).sp
-                            )
-                        }
+                        Icon(
+                            if (severity == Severity.CRITICAL) Icons.Default.Warning else Icons.Default.Info,
+                            contentDescription = null,
+                            tint = if (severity == Severity.CRITICAL) Color.Black else Color.White,
+                            modifier = Modifier.size(responsive.iconSize * 0.6f)
+                        )
+                        Text(
+                            text = "SEVERE",
+                            fontSize = (9 * fontScale).sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (severity == Severity.CRITICAL) Color.Black else Color.White,
+                            letterSpacing = (0.5 * fontScale).sp
+                        )
                     }
                 }
-                if (true) {
-                    Surface(
-                        shape = RoundedCornerShape(50.dp),
-                        color = Color(0xFF1E1E1E),
-                        border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.3f))
+                Surface(
+                    shape = RoundedCornerShape(50.dp),
+                    color = Color(0xFF1E1E1E),
+                    border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.3f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 0.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 0.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(5.dp)
-                        ) {
-                            Icon(Icons.Default.Check, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(responsive.iconSize * 0.6f))
-                            Text(
-                                text = "VERIFIED",
-                                fontSize = (9 * fontScale).sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                letterSpacing = (0.5 * fontScale).sp
-                            )
-                        }
+                        Icon(Icons.Default.Check, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(responsive.iconSize * 0.6f))
+                        Text(
+                            text = "VERIFIED",
+                            fontSize = (9 * fontScale).sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            letterSpacing = (0.5 * fontScale).sp
+                        )
                     }
                 }
             }
             Spacer(modifier = Modifier.height(responsive.itemSpacing))
 
-            // Snap title
-            val title = snap.heroTitle()
             Text(
-                text = title,
+                text = snap.heroTitle(),
                 fontSize = (20 * fontScale).sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
             Spacer(modifier = Modifier.height(responsive.itemSpacing / 8))
 
-
-
-            // Timestamp
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Schedule, contentDescription = null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(responsive.iconSize * 0.7f))
                 Spacer(modifier = Modifier.width(responsive.itemSpacing / 8))
@@ -311,12 +318,11 @@ private fun DetailHeroSection(snap: WeatherSnap, responsive: ResponsiveValues, f
     }
 }
 
-// ─ Core temp card ────────────────────────────────────────────────────────────
 @Composable
 private fun CoreTempCard(telemetry: WeatherTelemetry, responsive: ResponsiveValues, fontScale: Float) {
     val temp = telemetry.temperatureCelsius.toInt()
-    val high = telemetry.highTempCelsius?.toInt() ?: (temp + 2)
-    val low = telemetry.lowTempCelsius?.toInt() ?: (temp - 3)
+    val high = telemetry.highTempCelsius?.toInt()?.toString() ?: "--"
+    val low = telemetry.lowTempCelsius?.toInt()?.toString() ?: "--"
 
     val cardBg = Color(0xFF1A243A)
     val cardBorder = Color(0xFF2A3652)
@@ -333,14 +339,13 @@ private fun CoreTempCard(telemetry: WeatherTelemetry, responsive: ResponsiveValu
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Top
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 2)) {
+            Column(verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 4)) {
                 Text(
                     "Core Temp",
                     fontSize = (12 * fontScale).sp,
                     color = OnSurfaceVariantColor,
                     fontWeight = FontWeight.Medium
                 )
-                Spacer(modifier = Modifier.height(responsive.itemSpacing / 4))
                 Row(verticalAlignment = Alignment.Top) {
                     Text(
                         text = "$temp°",
@@ -357,7 +362,6 @@ private fun CoreTempCard(telemetry: WeatherTelemetry, responsive: ResponsiveValu
                         modifier = Modifier.padding(top = responsive.itemSpacing * 1.5f, start = responsive.itemSpacing / 8)
                     )
                 }
-                Spacer(modifier = Modifier.height(responsive.itemSpacing / 2))
                 Row(horizontalArrangement = Arrangement.spacedBy(responsive.itemSpacing)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.KeyboardArrowUp, contentDescription = null, tint = WeatherSnapColors.Tertiary, modifier = Modifier.size(responsive.iconSize * 0.7f))
@@ -379,7 +383,6 @@ private fun CoreTempCard(telemetry: WeatherTelemetry, responsive: ResponsiveValu
     }
 }
 
-// ─ Wind card ─────────────────────────────────────────────────────────────────
 @Composable
 private fun WindCard(telemetry: WeatherTelemetry, modifier: Modifier = Modifier, responsive: ResponsiveValues, fontScale: Float) {
     val cardBg = Color(0xFF1A243A)
@@ -401,8 +404,7 @@ private fun WindCard(telemetry: WeatherTelemetry, modifier: Modifier = Modifier,
                 )
                 Text(" km/h", fontSize = (13 * fontScale).sp, color = OnSurfaceVariantColor, modifier = Modifier.padding(bottom = responsive.itemSpacing / 4))
             }
-            // Wind direction
-            val windDirection = telemetry.windDirectionDegrees?.let { degreesToCompass(it) } ?: "NW"
+            val windDirection = telemetry.windDirectionDegrees?.let { degreesToCompass(it) } ?: "--"
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 4)) {
                 Icon(Icons.Default.Explore, contentDescription = null, tint = PrimaryColor, modifier = Modifier.size(responsive.iconSize * 0.9f))
                 Text(windDirection, fontSize = (13 * fontScale).sp, color = PrimaryColor, fontWeight = FontWeight.SemiBold)
@@ -411,11 +413,10 @@ private fun WindCard(telemetry: WeatherTelemetry, modifier: Modifier = Modifier,
     }
 }
 
-// ── Pressure card ────────────────────────────────────────────────────────────
 @Composable
 private fun PressureCard(telemetry: WeatherTelemetry, modifier: Modifier = Modifier, responsive: ResponsiveValues, fontScale: Float) {
-    val pressure = telemetry.pressure?.toInt() ?: 1008
-    val isFalling = pressure < 1013 // Standard atmosphere
+    val pressure = telemetry.pressure?.toInt()?.toString() ?: "--"
+    val isFalling = (telemetry.pressure ?: 1013.25) < 1013
 
     val cardBg = Color(0xFF1A243A)
     val cardBorder = Color(0xFF2A3652)
@@ -429,7 +430,7 @@ private fun PressureCard(telemetry: WeatherTelemetry, modifier: Modifier = Modif
             Text("Pressure", fontSize = (12 * fontScale).sp, color = OnSurfaceVariantColor)
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    text = "$pressure",
+                    text = pressure,
                     fontSize = (18 * fontScale).sp,
                     fontWeight = FontWeight.SemiBold,
                     color = OnSurfaceColor
@@ -454,10 +455,9 @@ private fun PressureCard(telemetry: WeatherTelemetry, modifier: Modifier = Modif
     }
 }
 
-// ─ Field notes card ──────────────────────────────────────────────────────────
 @Composable
-private fun FieldNotesCard(snap: WeatherSnap, responsive: ResponsiveValues, fontScale: Float) {
-    val cardBg = Color(0xFF121A2D)
+private fun NotesCard(snap: WeatherSnap, responsive: ResponsiveValues, fontScale: Float, onEditClick: () -> Unit) {
+    val cardBg = Color(0xFF1A243A)
     val cardBorder = Color(0xFF2A3652)
 
     Card(
@@ -478,30 +478,21 @@ private fun FieldNotesCard(snap: WeatherSnap, responsive: ResponsiveValues, font
                 )
             }
             Text(
-                text = snap.notes.ifEmpty { "Rapid cloud development observed over the western ridge. Pressure dropping steadily; expected squall line formation within 30 mins." },
+                text = snap.notes.ifEmpty { "No notes provided." },
                 fontSize = (15 * fontScale).sp,
                 color = OnSurfaceVariantColor,
                 lineHeight = (22 * fontScale).sp
             )
-            // Author attribution row
+            // Edit Log button
             HorizontalDivider(color = cardBorder, thickness = 1.dp)
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onEditClick() }
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 2)) {
-                    coil.compose.AsyncImage(
-                        model = "https://lh3.googleusercontent.com/aida-public/AB6AXuBd4X6xCdhz8cQhUzKkjXfHV4fHWzjzViMuonMvFEP9UtVs0O2sbnVeF6zv4CXiWtZS-9x8FPszNYz63A5oB7f0aOIq102liqwa9YmAblBIY2A_U4ovPzd2OiYnKbd08MOZq4tICsoBiPS8WNZG37KRKE6v9zw06jp5WfysYC7QvIZeVqNZzuNA8u57AOA4mEZpWj8YFpthRllR8RqIZqrn-HRpPyZqB7mWRGaGjWNP04cZU2HAss1wz1ruPLD3cuy7ioUwXi2xWeM",
-                        contentDescription = "Profile",
-                        modifier = Modifier.size(responsive.avatarSize * 0.85f).clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                    Column {
-                        Text("Dr. Elena Rostova", fontSize = (13 * fontScale).sp, color = OnSurfaceColor, fontWeight = FontWeight.Medium)
-                        Text("Lead Meteorologist", fontSize = (11 * fontScale).sp, color = OnSurfaceVariantColor, modifier = Modifier.offset(y = (-4).dp))
-                    }
-                }
                 Text(
                     "EDIT LOG",
                     fontSize = (11 * fontScale).sp,
@@ -531,7 +522,7 @@ private fun MetadataCard(snap: WeatherSnap, telemetry: WeatherTelemetry, respons
             MetadataRow(
                 icon = Icons.Default.CameraAlt,
                 label = "Capture Device",
-                value = "WS-Optics Pro X2",
+                value = android.os.Build.MODEL,
                 responsive = responsive,
                 fontScale = fontScale
             )
@@ -555,7 +546,7 @@ private fun MetadataCard(snap: WeatherSnap, telemetry: WeatherTelemetry, respons
             MetadataRow(
                 icon = Icons.Default.Visibility,
                 label = "Visibility Range",
-                value = "${estimateVisibility(telemetry.condition)} km",
+                value = telemetry.visibilityKm?.let { "%.1f".format(it) }?.plus(" km") ?: "--",
                 responsive = responsive,
                 fontScale = fontScale
             )

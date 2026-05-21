@@ -4,12 +4,17 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.weather.core.domain.repository.WeatherSnapRepository
+import com.weather.core.file.FileStorageManager
 import com.weather.core.model.WeatherSnap
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+import kotlinx.coroutines.withContext
 
 /**
  * ViewModel for the Report Detail screen.
@@ -20,6 +25,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SnapDetailViewModel @Inject constructor(
     private val weatherSnapRepository: WeatherSnapRepository,
+    private val fileStorageManager: FileStorageManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -42,4 +48,19 @@ class SnapDetailViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = null
         )
+
+    fun deleteSnap(onComplete: () -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val currentSnap = snap.value
+            if (currentSnap != null) {
+                currentSnap.photo?.let {
+                    fileStorageManager.deleteDraftFiles(it)
+                }
+                weatherSnapRepository.deleteSnap(currentSnap.id)
+            }
+            withContext(Dispatchers.Main) {
+                onComplete()
+            }
+        }
+    }
 }

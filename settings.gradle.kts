@@ -28,10 +28,11 @@ include(":core:database")
 include(":core:network")
 include(":core:file")
 include(":core:designsystem")
+include(":core:testing")
+include(":core:datastore")
 
 // Strictly Isolated Feature Modules
 include(":feature:weather")
 include(":feature:report")
 include(":feature:camera")
 include(":feature:history")
-include(":feature:settings")
