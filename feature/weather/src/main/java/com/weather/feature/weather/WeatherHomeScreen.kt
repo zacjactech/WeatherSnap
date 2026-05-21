@@ -129,42 +129,48 @@ fun WeatherHomeScreen(
         containerColor = BackgroundColor,
         contentColor = OnSurfaceColor
     ) { paddingValues ->
-        Column(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            HeroSection(
-                uiState = uiState,
-                locationName = locationName,
-                searchQuery = searchQuery,
-                searchResults = searchResults,
-                onSearchQueryChange = onSearchQueryChange,
-                onCitySelected = onCitySelected,
-                responsive = responsive,
-                fontScale = fontScale
-            )
-
-            AnimatedVisibility(
-                visible = uiState is WeatherUiState.Success,
-                enter = fadeIn(),
-                exit = fadeOut()
+            val fullHeight = this.maxHeight
+            Column(
+                modifier = Modifier.fillMaxSize()
             ) {
-                Box(modifier = Modifier.padding(horizontal = responsive.screenPadding, vertical = responsive.sectionSpacing)) {
-                    val successState = uiState as? WeatherUiState.Success
-                    MetricsGrid(
-                        telemetry = successState?.telemetry,
-                        userSettings = successState?.userSettings,
-                        responsive = responsive
-                    )
+                HeroSection(
+                    uiState = uiState,
+                    locationName = locationName,
+                    searchQuery = searchQuery,
+                    searchResults = searchResults,
+                    onSearchQueryChange = onSearchQueryChange,
+                    onCitySelected = onCitySelected,
+                    responsive = responsive,
+                    fontScale = fontScale,
+                    height = fullHeight * 0.6f // 60% of the screen height
+                )
+
+                AnimatedVisibility(
+                    visible = uiState is WeatherUiState.Success,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    Box(modifier = Modifier.padding(horizontal = responsive.screenPadding, vertical = responsive.sectionSpacing)) {
+                        val successState = uiState as? WeatherUiState.Success
+                        MetricsGrid(
+                            telemetry = successState?.telemetry,
+                            userSettings = successState?.userSettings,
+                            responsive = responsive
+                        )
+                    }
                 }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                CreateReportButton(onClick = onCreateReportClicked, responsive = responsive)
+
+                Spacer(modifier = Modifier.height(responsive.screenPadding))
             }
-
-            Spacer(modifier = Modifier.weight(0.25f))
-
-            CreateReportButton(onClick = onCreateReportClicked, responsive = responsive)
-
-            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
@@ -178,12 +184,13 @@ private fun HeroSection(
     onSearchQueryChange: (String) -> Unit,
     onCitySelected: (Double, Double, String) -> Unit,
     responsive: ResponsiveValues,
-    fontScale: Float
+    fontScale: Float,
+    height: androidx.compose.ui.unit.Dp
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(responsive.heroHeight * 1.35f),
+            .height(height),
         contentAlignment = Alignment.Center
     ) {
         val animCondition = (uiState as? WeatherUiState.Success)?.telemetry?.condition ?: com.weather.core.model.WeatherCondition.CLEAR
