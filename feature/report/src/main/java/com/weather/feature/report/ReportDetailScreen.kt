@@ -62,7 +62,9 @@ fun ReportDetailScreen(
     onNavigateBack: () -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val windowSizeClass = calculateWindowSizeClass(context as androidx.activity.ComponentActivity)
+    val activity = context as? androidx.activity.ComponentActivity
+        ?: return
+    val windowSizeClass = calculateWindowSizeClass(activity)
     val responsive = calculateResponsiveValues(windowSizeClass)
     val fontScale = when {
         responsive.isExpanded -> 1.1f
@@ -243,23 +245,21 @@ private fun DetailHeroSection(snap: WeatherSnap, responsive: ResponsiveValues, f
     ) {
         // Photo or condition gradient
         val photoPath = snap.photo?.filePath
-        val bitmap = remember(photoPath) {
-            photoPath?.let {
-                try { BitmapFactory.decodeFile(it)?.asImageBitmap() } catch (_: Exception) { null }
-            }
-        }
 
-        if (bitmap != null) {
-            Image(
-                bitmap = bitmap,
+        // Condition-based atmospheric gradient
+        val gradientColors = snap.heroGradient()
+        Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(gradientColors)))
+
+        if (photoPath != null) {
+            coil.compose.AsyncImage(
+                model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                    .data(photoPath)
+                    .crossfade(true)
+                    .build(),
                 contentDescription = "Observation photo",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-        } else {
-            // Condition-based atmospheric gradient
-            val gradientColors = snap.heroGradient()
-            Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(gradientColors)))
         }
 
         // Scrim

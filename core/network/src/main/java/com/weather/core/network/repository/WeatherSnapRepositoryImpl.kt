@@ -1,4 +1,4 @@
-package com.weather.core.database.repository
+package com.weather.core.network.repository
 
 import com.weather.core.common.DispatcherProvider
 import com.weather.core.database.dao.WeatherSnapDao
@@ -7,6 +7,8 @@ import com.weather.core.database.entity.asExternalModel
 import com.weather.core.domain.repository.WeatherSnapRepository
 import com.weather.core.model.SyncStatus
 import com.weather.core.model.WeatherSnap
+import com.weather.core.network.WeatherSnapApi
+import com.weather.core.network.model.NetworkWeatherSnapRequest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -17,16 +19,14 @@ import javax.inject.Singleton
 /**
  * Room-backed implementation of [WeatherSnapRepository].
  *
- * This class is STRICTLY a local persistence layer — it owns no network logic.
+ * This class is the SINGLE SOURCE OF TRUTH (offline-first).
  * Remote synchronization is orchestrated at app-layer via [WeatherSyncWorker] +
- * WorkManager, which calls [syncPendingSnaps] on the domain use-case, keeping
- * core:database free of any core:network dependency.
- *
- * Offline-first principle: Room is the SINGLE SOURCE OF TRUTH.
+ * WorkManager, which triggers [syncPendingSnaps].
  */
 @Singleton
 class WeatherSnapRepositoryImpl @Inject constructor(
     private val dao: WeatherSnapDao,
+    private val weatherSnapApi: WeatherSnapApi,
     private val dispatcherProvider: DispatcherProvider
 ) : WeatherSnapRepository {
 
@@ -54,11 +54,35 @@ class WeatherSnapRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Phase 1 stub — actual upload logic is wired at app-layer via [WeatherSyncWorker].
-     * The worker fetches pending snaps from this repo, calls the network layer, and
-     * calls [updateSnapSyncStatus] to reflect results back into Room.
+     * Fetches all DRAFT or FAILED snaps from Room and attempts to upload each one
+     * to the remote backend. On success, marks the snap as SYNCED. On failure,
+     * marks it as FAILED so WorkManager's retry policy will attempt it again.
      */
     override suspend fun syncPendingSnaps() = withContext(dispatcherProvider.io) {
-        // Intentionally empty in Phase 1 — sync coordination lives in the app module.
+        val pendingSnaps = dao.getPendingSnaps()
+        for (entity in pendingSnaps) {
+            try {
+                val snap = entity.asExternalModel()
+                val request = NetworkWeatherSnapRequest(
+                    id = snap.id,
+                    temperatureCelsius = snap.telemetry?.temperatureCelsius,
+                    condition = snap.telemetry?.condition?.name,
+                    humidityPercentage = snap.telemetry?.humidityPercentage,
+                    windSpeedKph = snap.telemetry?.windSpeedKph,
+                    latitude = snap.telemetry?.latitude,
+                    longitude = snap.telemetry?.longitude,
+                    capturedAt = snap.capturedAt,
+                    notes = snap.notes
+                )
+                val response = weatherSnapApi.uploadSnap(request)
+                if (response.isSuccessful) {
+                    dao.updateSyncStatus(snap.id, SyncStatus.COMPLETED.name)
+                } else {
+                    dao.updateSyncStatus(snap.id, SyncStatus.FAILED.name)
+                }
+            } catch (e: Exception) {
+                dao.updateSyncStatus(entity.id, SyncStatus.FAILED.name)
+            }
+        }
     }
 }

@@ -28,9 +28,16 @@ fun WeatherSnapEntity.asExternalModel(): WeatherSnap {
                 condition = try { WeatherCondition.valueOf(it.condition) } catch (e: Exception) { WeatherCondition.UNKNOWN },
                 humidityPercentage = it.humidityPercentage,
                 windSpeedKph = it.windSpeedKph,
+                windDirectionDegrees = it.windDirectionDegrees,
                 pressure = it.pressure,
                 latitude = it.latitude,
-                longitude = it.longitude
+                longitude = it.longitude,
+                visibilityKm = it.visibilityKm,
+                uvIndex = it.uvIndex,
+                cloudCoverPercent = it.cloudCoverPercent,
+                dewPointCelsius = it.dewPointCelsius,
+                highTempCelsius = it.highTempCelsius,
+                lowTempCelsius = it.lowTempCelsius
             )
         },
         photo = photo?.let {
@@ -57,9 +64,16 @@ fun WeatherSnap.asEntity(): WeatherSnapEntity {
                 condition = it.condition.name,
                 humidityPercentage = it.humidityPercentage,
                 windSpeedKph = it.windSpeedKph,
+                windDirectionDegrees = it.windDirectionDegrees,
                 pressure = it.pressure,
                 latitude = it.latitude,
-                longitude = it.longitude
+                longitude = it.longitude,
+                visibilityKm = it.visibilityKm,
+                uvIndex = it.uvIndex,
+                cloudCoverPercent = it.cloudCoverPercent,
+                dewPointCelsius = it.dewPointCelsius,
+                highTempCelsius = it.highTempCelsius,
+                lowTempCelsius = it.lowTempCelsius
             )
         },
         photo = photo?.let {

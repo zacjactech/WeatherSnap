@@ -68,6 +68,7 @@ fun WeatherSnapTopBar(
     showSearch: Boolean = true,
     showProfile: Boolean = true,
     showOverflow: Boolean = false,
+    profileUrl: String? = null,
     onSearchClick: () -> Unit = {},
     onOverflowClick: () -> Unit = {},
     action: (@Composable () -> Unit)? = null,
@@ -119,11 +120,20 @@ fun WeatherSnapTopBar(
                         .border(1.dp, OutlineVariantColor.copy(alpha = 0.4f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    AsyncImage(
-                        model = "https://lh3.googleusercontent.com/aida-public/AB6AXuBd4X6xCdhz8cQhUzKkjXfHV4fHWzjzViMuonMvFEP9UtVs0O2sbnVeF6zv4CXiWtZS-9x8FPszNYz63A5oB7f0aOIq102liqwa9YmAblBIY2A_U4ovPzd2OiYnKbd08MOZq4tICsoBiPS8WNZG37KRKE6v9zw06jp5WfysYC7QvIZeVqNZzuNA8u57AOA4mEZpWj8YFpthRllRllR8RqIZqrn-HRpPyZqB7mWRGaGjWNP04cZU2HAss1wz1ruPLD3cuy7ioUwXi2xWeM",
-                        contentDescription = "Profile",
-                        modifier = Modifier.matchParentSize()
-                    )
+                    if (profileUrl != null) {
+                        AsyncImage(
+                            model = profileUrl,
+                            contentDescription = "Profile",
+                            modifier = Modifier.matchParentSize()
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = "Profile",
+                            tint = OnSurfaceVariantColor,
+                            modifier = Modifier.size(avatarSize * 0.6f)
+                        )
+                    }
                 }
             }
         },

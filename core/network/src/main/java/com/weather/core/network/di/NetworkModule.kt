@@ -3,6 +3,7 @@ package com.weather.core.network.di
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.weather.core.network.GeocodingApi
 import com.weather.core.network.OpenMeteoApi
+import com.weather.core.network.WeatherSnapApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -13,17 +14,26 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
+    /**
+     * Shared OkHttpClient with logging gated behind BuildConfig.DEBUG to avoid
+     * leaking full request/response bodies in release builds.
+     */
     @Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (com.weather.core.network.BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
         }
         return OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
@@ -69,5 +79,27 @@ object NetworkModule {
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
         return retrofit.create(GeocodingApi::class.java)
+    }
+
+    /**
+     * Provides the WeatherSnap backend API client.
+     *
+     * NOTE: Replace "https://api.weathersnap.example.com/" with the real backend URL.
+     * If no backend exists, this client is still wired but sync will gracefully fail
+     * and be retried by WorkManager.
+     */
+    @Provides
+    @Singleton
+    fun provideWeatherSnapApi(
+        okHttpClient: OkHttpClient,
+        json: Json
+    ): WeatherSnapApi {
+        val contentType = "application/json".toMediaType()
+        val retrofit = Retrofit.Builder()
+            .baseUrl(com.weather.core.network.BuildConfig.WEATHERSNAP_BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(json.asConverterFactory(contentType))
+            .build()
+        return retrofit.create(WeatherSnapApi::class.java)
     }
 }

@@ -1,6 +1,6 @@
 package com.weather.feature.weather
 
-import androidx.activity.ComponentActivity
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -102,8 +102,9 @@ fun WeatherHomeScreen(
     onNavigateToReports: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {}
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val windowSizeClass = calculateWindowSizeClass(context as ComponentActivity)
+    val activity = LocalContext.current as? androidx.activity.ComponentActivity
+        ?: return
+    val windowSizeClass = calculateWindowSizeClass(activity)
     val responsive = calculateResponsiveValues(windowSizeClass)
     val fontScale = when {
         responsive.isExpanded -> 1.1f

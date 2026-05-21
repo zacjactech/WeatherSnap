@@ -14,8 +14,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -89,8 +90,10 @@ fun HistoryScreen(
     onNavigateToCamera: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {}
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val windowSizeClass = calculateWindowSizeClass(context as androidx.activity.ComponentActivity)
+    val context = LocalContext.current
+    val activity = context as? androidx.activity.ComponentActivity
+        ?: return
+    val windowSizeClass = calculateWindowSizeClass(activity)
     val responsive = calculateResponsiveValues(windowSizeClass)
     val fontScale = when {
         responsive.isExpanded -> 1.1f
@@ -479,28 +482,25 @@ private fun SnapPhotoHero(snap: WeatherSnap, severity: Severity, responsive: Res
             .height(responsive.photoHeroHeight)
             .clip(RoundedCornerShape(topStart = responsive.cardCornerRadius, topEnd = responsive.cardCornerRadius))
     ) {
-        // Attempt to load photo, else show condition gradient placeholder
         val photoPath = snap.photo?.filePath
-        val bitmap = remember(photoPath) {
-            photoPath?.let {
-                try { BitmapFactory.decodeFile(it)?.asImageBitmap() } catch (_: Exception) { null }
-            }
-        }
 
-        if (bitmap != null) {
-            Image(
-                bitmap = bitmap,
+        // Atmospheric gradient placeholder based on condition
+        val gradientColors = conditionGradient(snap.telemetry?.condition ?: WeatherCondition.UNKNOWN)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Brush.verticalGradient(gradientColors))
+        )
+
+        if (photoPath != null) {
+            coil.compose.AsyncImage(
+                model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                    .data(photoPath)
+                    .crossfade(true)
+                    .build(),
                 contentDescription = "Observation photo",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
-            )
-        } else {
-            // Atmospheric gradient placeholder based on condition
-            val gradientColors = conditionGradient(snap.telemetry?.condition ?: WeatherCondition.UNKNOWN)
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Brush.verticalGradient(gradientColors))
             )
         }
 

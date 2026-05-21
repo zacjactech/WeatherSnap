@@ -22,7 +22,8 @@ interface OpenMeteoApi {
         @Query("latitude") latitude: Double,
         @Query("longitude") longitude: Double,
         @Query("current_weather") currentWeather: Boolean = true,
-        @Query("hourly") hourly: String = "temperature_2m,relativehumidity_2m,windspeed_10m,visibility,uv_index,cloudcover,dewpoint_2m",
+        @Query("hourly") hourly: String = "temperature_2m,relativehumidity_2m,windspeed_10m,visibility,uv_index,cloudcover,dewpoint_2m,surface_pressure",
+        @Query("daily") daily: String = "temperature_2m_max,temperature_2m_min",
         @Query("temperature_unit") temperatureUnit: String = "celsius",
         @Query("wind_speed_unit") windSpeedUnit: String = "kmh",
         @Query("timezone") timezone: String = "auto"

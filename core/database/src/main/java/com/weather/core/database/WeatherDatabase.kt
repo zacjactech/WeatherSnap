@@ -15,7 +15,7 @@ import com.weather.core.database.entity.WeatherSnapEntity
         CitySuggestionCacheEntity::class,
         WeatherDraftEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class WeatherDatabase : RoomDatabase() {

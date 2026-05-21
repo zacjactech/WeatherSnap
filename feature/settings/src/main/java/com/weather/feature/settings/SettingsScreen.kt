@@ -75,7 +75,9 @@ fun SettingsScreen(
     onNavigateToReports: () -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val windowSizeClass = calculateWindowSizeClass(context as androidx.activity.ComponentActivity)
+    val activity = context as? androidx.activity.ComponentActivity
+        ?: return
+    val windowSizeClass = calculateWindowSizeClass(activity)
     val responsive = calculateResponsiveValues(windowSizeClass)
     val fontScale = when {
         responsive.isExpanded -> 1.1f

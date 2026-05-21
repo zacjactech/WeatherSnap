@@ -13,7 +13,8 @@ data class OpenMeteoResponse(
     val longitude: Double,
     @SerialName("current_weather")
     val currentWeather: CurrentWeatherDto? = null,
-    val hourly: HourlyDataDto? = null
+    val hourly: HourlyDataDto? = null,
+    val daily: DailyDataDto? = null
 )
 
 /**
@@ -56,5 +57,19 @@ data class HourlyDataDto(
     @SerialName("cloudcover")
     val cloudcover: List<Int> = emptyList(),
     @SerialName("dewpoint_2m")
-    val dewpoint2m: List<Double> = emptyList()
+    val dewpoint2m: List<Double> = emptyList(),
+    @SerialName("surface_pressure")
+    val surfacePressure: List<Double> = emptyList()
+)
+
+/**
+ * Daily data block providing actual high and low temperatures for the current day.
+ */
+@Serializable
+data class DailyDataDto(
+    val time: List<String> = emptyList(),
+    @SerialName("temperature_2m_max")
+    val temperature2mMax: List<Double> = emptyList(),
+    @SerialName("temperature_2m_min")
+    val temperature2mMin: List<Double> = emptyList()
 )

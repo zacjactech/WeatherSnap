@@ -35,13 +35,8 @@ class WeatherRepositoryImpl @Inject constructor(
                 val condition = wmoCodeToCondition(current.weathercode)
                 val humidity = body.hourly?.relativehumidity2m?.firstOrNull()
 
-                // Dynamic realistic pressure based on weather condition (standard atmosphere is ~1013 hPa)
-                val pressureVal = when (condition) {
-                    WeatherCondition.RAIN, WeatherCondition.THUNDERSTORM -> 995.0 + (lat % 5.0) + (lon % 3.0)
-                    WeatherCondition.SNOW -> 1004.0 + (lat % 4.0)
-                    WeatherCondition.CLOUDY -> 1009.0 + (lon % 6.0)
-                    else -> 1014.0 + ((lat + lon) % 8.0)
-                }
+                // Real surface pressure from API hourly block (first index = current hour)
+                val pressureVal = body.hourly?.surfacePressure?.firstOrNull()
 
                 // Extra hourly fields — Open-Meteo returns metres for visibility; convert to km
                 val visibilityKm = body.hourly?.visibility?.firstOrNull()?.let { it / 1000.0 }
@@ -49,19 +44,26 @@ class WeatherRepositoryImpl @Inject constructor(
                 val cloudCover = body.hourly?.cloudcover?.firstOrNull()
                 val dewPoint = body.hourly?.dewpoint2m?.firstOrNull()
 
+                // Real daily high/low temperatures from the daily block (index 0 = today)
+                val highTemp = body.daily?.temperature2mMax?.firstOrNull()
+                val lowTemp = body.daily?.temperature2mMin?.firstOrNull()
+
                 emit(
                     WeatherTelemetry(
                         temperatureCelsius = current.temperature,
                         condition = condition,
                         humidityPercentage = humidity,
                         windSpeedKph = current.windspeed,
+                        windDirectionDegrees = current.winddirection,
                         pressure = pressureVal,
                         latitude = body.latitude,
                         longitude = body.longitude,
                         visibilityKm = visibilityKm,
                         uvIndex = uvIndex,
                         cloudCoverPercent = cloudCover,
-                        dewPointCelsius = dewPoint
+                        dewPointCelsius = dewPoint,
+                        highTempCelsius = highTemp,
+                        lowTempCelsius = lowTemp
                     )
                 )
             } else {

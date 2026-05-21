@@ -48,6 +48,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.coil.compose)
 
     // CameraX Hardware Support
     implementation(libs.camerax.core)

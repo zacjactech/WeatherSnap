@@ -13,7 +13,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -61,9 +61,17 @@ class WeatherViewModel @Inject constructor(
 
     private val _currentTelemetry = MutableStateFlow<com.weather.core.model.WeatherTelemetry?>(null)
 
-    val uiState: StateFlow<WeatherUiState> = currentLatitude
-        .flatMapLatest { lat ->
-            val lon = currentLongitude.value
+    /**
+     * Combines lat and lon into a single atomic pair before calling the use case.
+     * This eliminates the race condition where [currentLongitude].value is snapshotted
+     * at subscribe time inside a [flatMapLatest] on [currentLatitude], resulting in
+     * API calls with a mismatched lat/lon pair when both are updated simultaneously.
+     */
+    val uiState: StateFlow<WeatherUiState> = combine(currentLatitude, currentLongitude) { lat, lon ->
+            lat to lon
+        }
+        .distinctUntilChanged()
+        .flatMapLatest { (lat, lon) ->
             getWeatherTelemetryUseCase(lat, lon).map { result ->
                 when (result) {
                     is Result.Loading -> WeatherUiState.Loading

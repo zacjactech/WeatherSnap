@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -78,8 +79,9 @@ fun CameraScreen(
     onConfirmClick: (String) -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val windowSizeClass = calculateWindowSizeClass(context as androidx.activity.ComponentActivity)
+    val activity = LocalContext.current as? androidx.activity.ComponentActivity
+        ?: return
+    val windowSizeClass = calculateWindowSizeClass(activity)
     val responsive = calculateResponsiveValues(windowSizeClass)
     val fontScale = when {
         responsive.isExpanded -> 1.1f
@@ -453,19 +455,15 @@ private fun FullscreenCameraPreview(
                     contentAlignment = Alignment.Center
                 ) {
                     if (lastPhotoPath != null) {
-                        val bitmap = remember(lastPhotoPath) {
-                            try { android.graphics.BitmapFactory.decodeFile(lastPhotoPath)?.asImageBitmap() } catch (_: Exception) { null }
-                        }
-                        if (bitmap != null) {
-                            androidx.compose.foundation.Image(
-                                bitmap = bitmap,
-                                contentDescription = "Last photo",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                            )
-                        } else {
-                            Icon(Icons.Default.Photo, contentDescription = "Gallery", tint = Color.White, modifier = Modifier.size(responsive.iconSize * 1.2f))
-                        }
+                        coil.compose.AsyncImage(
+                            model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                                .data(lastPhotoPath)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Last photo",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
                     } else {
                         Icon(Icons.Default.Photo, contentDescription = "Gallery", tint = Color.White, modifier = Modifier.size(responsive.iconSize * 1.2f))
                     }
@@ -794,23 +792,20 @@ private fun PhotoConfirmOverlay(
                     .border(1.dp, OutlineVariantColor, RoundedCornerShape(responsive.cardCornerRadius)),
                 contentAlignment = Alignment.Center
             ) {
-                val bitmap = remember(filePath) {
-                    try { android.graphics.BitmapFactory.decodeFile(filePath)?.asImageBitmap() } catch (_: Exception) { null }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PrimaryColor, modifier = Modifier.size(48.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Photo captured", color = OnSurfaceColor, fontSize = 16.sp)
                 }
-                if (bitmap != null) {
-                    androidx.compose.foundation.Image(
-                        bitmap = bitmap,
-                        contentDescription = "Captured photo",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                    )
-                } else {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PrimaryColor, modifier = Modifier.size(48.dp))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Photo captured", color = OnSurfaceColor, fontSize = 16.sp)
-                    }
-                }
+                coil.compose.AsyncImage(
+                    model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                        .data(filePath)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Captured photo",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
             }
             Spacer(modifier = Modifier.weight(1f))
             Row(

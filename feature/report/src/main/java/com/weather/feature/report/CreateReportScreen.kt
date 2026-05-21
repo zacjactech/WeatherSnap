@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -359,8 +360,9 @@ fun CreateReportScreen(
     onNavigateBack: () -> Unit,
     onReportSaved: () -> Unit
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val windowSizeClass = calculateWindowSizeClass(context as androidx.activity.ComponentActivity)
+    val activity = LocalContext.current as? androidx.activity.ComponentActivity
+        ?: return
+    val windowSizeClass = calculateWindowSizeClass(activity)
     val responsive = calculateResponsiveValues(windowSizeClass)
     val fontScale = when {
         responsive.isExpanded -> 1.1f
@@ -514,23 +516,16 @@ private fun DraftingContent(
                             .background(SurfaceColor),
                         contentAlignment = Alignment.Center
                     ) {
-                        val bitmap = remember(photo.filePath) {
-                            try {
-                                BitmapFactory.decodeFile(photo.filePath)?.asImageBitmap()
-                            } catch (e: Exception) {
-                                null
-                            }
-                        }
-                        if (bitmap != null) {
-                            Image(
-                                bitmap = bitmap,
-                                contentDescription = "Observation Photo",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Icon(Icons.Default.Warning, contentDescription = null, tint = OnSurfaceVariantColor)
-                        }
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = OnSurfaceVariantColor)
+                        coil.compose.AsyncImage(
+                            model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                                .data(photo.filePath)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Observation Photo",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
                     }
                 } else {
                     Box(
