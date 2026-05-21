@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
                         composable("weather") {
                             WeatherHomeRoute(
                                 onCreateReportClicked = { navController.navigate("create_report") },
-                                onNavigateToCamera = { navController.navigate("camera") },
+                                onNavigateToCamera = { navController.navigate("create_report") },
                                 onNavigateToReports = { navController.navigate("history") },
                                 onNavigateToSettings = { navController.navigate("settings") }
                             )
@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
                         
                         composable("create_report") {
                             CreateReportRoute(
-                                onNavigateToCamera = { navController.navigate("camera") },
+                                onNavigateToCamera = { draftId -> navController.navigate("camera/$draftId") },
                                 onNavigateBack = { navController.popBackStack() },
                                 onReportSaved = { 
                                     navController.popBackStack()
@@ -56,10 +56,12 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         
-                        composable("camera") {
+                        composable(
+                            "camera/{draftId}",
+                            arguments = listOf(androidx.navigation.navArgument("draftId") { type = androidx.navigation.NavType.StringType })
+                        ) {
                             CameraRoute(
-                                onPhotoTaken = { filePath ->
-                                    navController.previousBackStackEntry?.savedStateHandle?.set("photo_path", filePath)
+                                onPhotoTaken = {
                                     navController.popBackStack()
                                 },
                                 onNavigateBack = { navController.popBackStack() }
@@ -71,7 +73,7 @@ class MainActivity : ComponentActivity() {
                                 onReportClick = { snapId -> navController.navigate("report_detail/$snapId") },
                                 onCreateReportClick = { navController.navigate("create_report") },
                                 onNavigateToHome = { navController.navigate("weather") },
-                                onNavigateToCamera = { navController.navigate("camera") },
+                                onNavigateToCamera = { navController.navigate("create_report") },
                                 onNavigateToSettings = { navController.navigate("settings") }
                             )
                         }

@@ -34,4 +34,9 @@ interface WeatherSnapRepository {
      * Deletes a local draft or synchronized snap record.
      */
     suspend fun deleteSnap(id: String)
+    
+    /**
+     * Get all discarded snaps for background cleanup.
+     */
+    suspend fun getDiscardedSnaps(): List<WeatherSnap>
 }

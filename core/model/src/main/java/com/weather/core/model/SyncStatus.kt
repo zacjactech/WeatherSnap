@@ -4,5 +4,6 @@ enum class SyncStatus {
     DRAFT,
     SYNCING,
     COMPLETED,
-    FAILED
+    FAILED,
+    DISCARDED
 }

@@ -6,6 +6,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.weather.core.database.repository.CitySuggestionCacheRepository
 import com.weather.core.domain.repository.WeatherSnapRepository
+import com.weather.core.file.FileStorageManager
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -13,6 +14,7 @@ import dagger.assisted.AssistedInject
  * Periodic background worker responsible for:
  * 1. Uploading all DRAFT/FAILED weather snaps to the remote backend.
  * 2. Pruning expired city suggestion cache entries.
+ * 3. Cleaning up discarded snaps and orphaned files.
  *
  * Scheduled by [WeatherSnapApplication] using WorkManager's
  * [androidx.work.PeriodicWorkRequest]. WorkManager's built-in retry
@@ -23,7 +25,8 @@ class WeatherSyncWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
     private val weatherSnapRepository: WeatherSnapRepository,
-    private val citySuggestionCacheRepository: CitySuggestionCacheRepository
+    private val citySuggestionCacheRepository: CitySuggestionCacheRepository,
+    private val fileStorageManager: FileStorageManager
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
@@ -38,6 +41,13 @@ class WeatherSyncWorker @AssistedInject constructor(
 
             // 2. Prune expired city cache to prevent stale search results
             citySuggestionCacheRepository.clearExpiredCache()
+
+            // 3. Cleanup discarded snaps and orphaned files
+            val discardedSnaps = weatherSnapRepository.getDiscardedSnaps()
+            for (snap in discardedSnaps) {
+                snap.photo?.let { fileStorageManager.deleteDraftFiles(it) }
+                weatherSnapRepository.deleteSnap(snap.id)
+            }
 
             Result.success()
         } catch (e: Exception) {

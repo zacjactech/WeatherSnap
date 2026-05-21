@@ -36,7 +36,7 @@ object DatabaseModule {
             WeatherDatabase::class.java,
             "weather-snap-database"
         )
-        .fallbackToDestructiveMigration()
+        .addMigrations(WeatherDatabase.MIGRATION_4_5)
         .build()
     }
 

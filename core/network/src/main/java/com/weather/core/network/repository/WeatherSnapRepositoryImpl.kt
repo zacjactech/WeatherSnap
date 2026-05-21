@@ -53,6 +53,10 @@ class WeatherSnapRepositoryImpl @Inject constructor(
         dao.deleteSnapById(id)
     }
 
+    override suspend fun getDiscardedSnaps(): List<WeatherSnap> = withContext(dispatcherProvider.io) {
+        dao.getDiscardedSnaps().map { it.asExternalModel() }
+    }
+
     /**
      * Fetches all DRAFT or FAILED snaps from Room and attempts to upload each one
      * to the remote backend. On success, marks the snap as SYNCED. On failure,

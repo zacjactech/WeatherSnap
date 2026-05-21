@@ -7,6 +7,7 @@ import com.weather.core.common.DispatcherProvider
 import com.weather.core.domain.repository.WeatherSnapRepository
 import com.weather.core.domain.usecase.GetWeatherTelemetryDraftUseCase
 import com.weather.core.domain.usecase.SaveWeatherSnapDraftUseCase
+import com.weather.core.file.FileStorageManager
 import com.weather.core.model.PhotoMetadata
 import com.weather.core.model.SyncStatus
 import com.weather.core.model.WeatherCondition
@@ -25,6 +26,7 @@ class ReportViewModel @Inject constructor(
     private val saveWeatherSnapDraftUseCase: SaveWeatherSnapDraftUseCase,
     private val getWeatherTelemetryDraftUseCase: GetWeatherTelemetryDraftUseCase,
     private val weatherSnapRepository: WeatherSnapRepository,
+    private val fileStorageManager: FileStorageManager,
     private val dispatcherProvider: DispatcherProvider,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -34,6 +36,8 @@ class ReportViewModel @Inject constructor(
 
     private var activeDraft: WeatherSnap? = null
     private var locationName: String? = null
+    
+    val draftId: StateFlow<String?> = savedStateHandle.getStateFlow(DRAFT_ID_KEY, null)
 
     companion object {
         private const val DRAFT_ID_KEY = "draft_id"
@@ -74,7 +78,6 @@ class ReportViewModel @Inject constructor(
                 }
             }
         }
-        observePhotoPathUpdates()
     }
 
     private fun observeDraft(draftId: String) {
@@ -94,25 +97,6 @@ class ReportViewModel @Inject constructor(
         }
     }
 
-    private fun observePhotoPathUpdates() {
-        viewModelScope.launch {
-            savedStateHandle.getStateFlow<String?>("photo_path", null).collect { path ->
-                if (path != null) {
-                    val currentDraft = activeDraft
-                    if (currentDraft != null) {
-                        val photo = PhotoMetadata(
-                            id = UUID.randomUUID().toString(),
-                            filePath = path,
-                            width = 1920,
-                            height = 1080,
-                            capturedAt = System.currentTimeMillis()
-                        )
-                        val updated = currentDraft.copy(photo = photo)
-                        saveWeatherSnapDraftUseCase(updated)
-                        savedStateHandle["photo_path"] = null
-                    }
-                }
-            }
         }
     }
 
@@ -194,6 +178,12 @@ class ReportViewModel @Inject constructor(
             try {
                 val completedSnap = snap.copy(status = SyncStatus.COMPLETED)
                 saveWeatherSnapDraftUseCase(completedSnap)
+                
+                // Cleanup orphaned original raw file to free space
+                snap.photo?.originalFilePath?.let { originalPath ->
+                    fileStorageManager.deletePhoto(originalPath)
+                }
+                
                 _uiState.value = ReportUiState.Success
             } catch (e: Exception) {
                 _uiState.value = ReportUiState.Error(
@@ -217,6 +207,32 @@ class ReportViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = ReportUiState.Error(
                     e.message ?: "Failed to save draft to local storage."
+                )
+            }
+        }
+    }
+
+    /**
+     * Safely discards the draft, marks it as DISCARDED, and deletes all associated files.
+     */
+    fun discardDraft() {
+        val snap = activeDraft ?: return
+        viewModelScope.launch(dispatcherProvider.io) {
+            _uiState.value = ReportUiState.Submitting
+            try {
+                // Delete photo files safely
+                snap.photo?.let {
+                    fileStorageManager.deleteDraftFiles(it)
+                }
+                // Mark draft as discarded
+                val discardedSnap = snap.copy(status = SyncStatus.DISCARDED)
+                saveWeatherSnapDraftUseCase(discardedSnap)
+                // Delete from room
+                weatherSnapRepository.deleteSnap(snap.id)
+                _uiState.value = ReportUiState.Success
+            } catch (e: Exception) {
+                _uiState.value = ReportUiState.Error(
+                    e.message ?: "Failed to discard draft."
                 )
             }
         }

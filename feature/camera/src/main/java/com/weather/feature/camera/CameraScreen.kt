@@ -50,7 +50,7 @@ import com.weather.core.model.WeatherTelemetry
 @Composable
 fun CameraRoute(
     viewModel: CameraViewModel = hiltViewModel(),
-    onPhotoTaken: (String) -> Unit,
+    onPhotoTaken: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -63,7 +63,7 @@ fun CameraRoute(
         lastPhotoPath = lastPhotoPath,
         onCaptureClick = { bytes -> viewModel.processCapturedPhoto(bytes) },
         onRetakeClick = viewModel::resetCamera,
-        onConfirmClick = { filePath -> onPhotoTaken(filePath) },
+        onConfirmClick = { onPhotoTaken() },
         onNavigateBack = onNavigateBack
     )
 }
@@ -76,7 +76,7 @@ fun CameraScreen(
     lastPhotoPath: String?,
     onCaptureClick: (ByteArray) -> Unit,
     onRetakeClick: () -> Unit,
-    onConfirmClick: (String) -> Unit,
+    onConfirmClick: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
     val activity = LocalContext.current as? androidx.activity.ComponentActivity
@@ -120,7 +120,7 @@ fun CameraScreen(
                 PhotoConfirmOverlay(
                     filePath = uiState.filePath,
                     onRetakeClick = onRetakeClick,
-                    onConfirmClick = { onConfirmClick(uiState.filePath) },
+                    onConfirmClick = onConfirmClick,
                     responsive = responsive
                 )
             }
@@ -729,6 +729,7 @@ private fun ShutterButton(isCapturing: Boolean, onClick: () -> Unit, responsive:
 // ── Permission denied state ──────────────────────────────────────────────────
 @Composable
 private fun CameraPermissionDenied(onRequestPermission: () -> Unit, responsive: ResponsiveValues) {
+    val context = LocalContext.current
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -752,11 +753,20 @@ private fun CameraPermissionDenied(onRequestPermission: () -> Unit, responsive: 
                 fontSize = 14.sp, color = OnSurfaceVariantColor, textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(responsive.sectionSpacing))
-            Button(
-                onClick = onRequestPermission,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A90E2))
-            ) {
-                Text("Grant Permission", color = Color.White, fontWeight = FontWeight.SemiBold)
+            Row(horizontalArrangement = Arrangement.spacedBy(responsive.gridGap)) {
+                Button(
+                    onClick = onRequestPermission,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A90E2))
+                ) {
+                    Text("Grant Permission", color = Color.White, fontWeight = FontWeight.SemiBold)
+                }
+                OutlinedButton(
+                    onClick = {
+                        context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:${context.packageName}")))
+                    }
+                ) {
+                    Text("Open Settings", color = OnSurfaceColor)
+                }
             }
         }
     }

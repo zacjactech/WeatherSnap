@@ -44,6 +44,10 @@ fun WeatherSnapEntity.asExternalModel(): WeatherSnap {
             PhotoMetadata(
                 id = it.photoId,
                 filePath = it.filePath,
+                originalFilePath = it.originalFilePath,
+                thumbnailFilePath = it.thumbnailFilePath,
+                originalSizeBytes = it.originalSizeBytes,
+                compressedSizeBytes = it.compressedSizeBytes,
                 width = it.width,
                 height = it.height,
                 capturedAt = it.capturedAt
@@ -80,6 +84,10 @@ fun WeatherSnap.asEntity(): WeatherSnapEntity {
             PhotoMetadataEntity(
                 photoId = it.id,
                 filePath = it.filePath,
+                originalFilePath = it.originalFilePath,
+                thumbnailFilePath = it.thumbnailFilePath,
+                originalSizeBytes = it.originalSizeBytes,
+                compressedSizeBytes = it.compressedSizeBytes,
                 width = it.width,
                 height = it.height,
                 capturedAt = it.capturedAt

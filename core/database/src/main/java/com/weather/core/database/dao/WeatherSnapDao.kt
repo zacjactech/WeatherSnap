@@ -30,4 +30,7 @@ interface WeatherSnapDao {
 
     @Query("DELETE FROM weather_snaps WHERE id = :id")
     suspend fun deleteSnapById(id: String)
+    
+    @Query("SELECT * FROM weather_snaps WHERE status = 'DISCARDED'")
+    suspend fun getDiscardedSnaps(): List<WeatherSnapEntity>
 }

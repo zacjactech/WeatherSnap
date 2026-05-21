@@ -482,7 +482,7 @@ private fun SnapPhotoHero(snap: WeatherSnap, severity: Severity, responsive: Res
             .height(responsive.photoHeroHeight)
             .clip(RoundedCornerShape(topStart = responsive.cardCornerRadius, topEnd = responsive.cardCornerRadius))
     ) {
-        val photoPath = snap.photo?.filePath
+        val photoPath = snap.photo?.thumbnailFilePath ?: snap.photo?.filePath
 
         // Atmospheric gradient placeholder based on condition
         val gradientColors = conditionGradient(snap.telemetry?.condition ?: WeatherCondition.UNKNOWN)

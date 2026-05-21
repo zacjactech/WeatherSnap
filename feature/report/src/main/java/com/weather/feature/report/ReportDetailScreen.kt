@@ -140,7 +140,7 @@ fun ReportDetailScreen(
 
                 // Metadata grid
                 snap.telemetry?.let { telemetry ->
-                    MetadataCard(telemetry = telemetry, responsive = responsive, fontScale = fontScale)
+                    MetadataCard(snap = snap, telemetry = telemetry, responsive = responsive, fontScale = fontScale)
                 }
             }
         }
@@ -569,7 +569,7 @@ private fun FieldNotesCard(snap: WeatherSnap, responsive: ResponsiveValues, font
 
 // ── Metadata grid card ────────────────────────────────────────────────────────
 @Composable
-private fun MetadataCard(telemetry: WeatherTelemetry, responsive: ResponsiveValues, fontScale: Float) {
+private fun MetadataCard(snap: WeatherSnap, telemetry: WeatherTelemetry, responsive: ResponsiveValues, fontScale: Float) {
     val cardBg = Color(0xFF1A243A)
     val cardBorder = Color(0xFF2A3652)
 
@@ -612,6 +612,20 @@ private fun MetadataCard(telemetry: WeatherTelemetry, responsive: ResponsiveValu
                 responsive = responsive,
                 fontScale = fontScale
             )
+            
+            val photo = snap.photo
+            if (photo?.originalSizeBytes != null && photo.compressedSizeBytes != null) {
+                HorizontalDivider(color = cardBorder.copy(alpha = 0.5f), thickness = 1.dp)
+                val origSize = android.text.format.Formatter.formatShortFileSize(androidx.compose.ui.platform.LocalContext.current, photo.originalSizeBytes!!)
+                val compSize = android.text.format.Formatter.formatShortFileSize(androidx.compose.ui.platform.LocalContext.current, photo.compressedSizeBytes!!)
+                MetadataRow(
+                    icon = Icons.Default.Image,
+                    label = "Media Size",
+                    value = "$origSize -> $compSize",
+                    responsive = responsive,
+                    fontScale = fontScale
+                )
+            }
         }
     }
 }

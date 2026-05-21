@@ -328,16 +328,17 @@ val DropletIcon: ImageVector
 @Composable
 fun CreateReportRoute(
     viewModel: ReportViewModel = hiltViewModel(),
-    onNavigateToCamera: () -> Unit,
+    onNavigateToCamera: (String) -> Unit,
     onNavigateBack: () -> Unit,
     onReportSaved: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val draftId by viewModel.draftId.collectAsStateWithLifecycle()
 
     CreateReportScreen(
         uiState = uiState,
         onNotesChange = viewModel::updateNotes,
-        onAddPhotoClick = onNavigateToCamera,
+        onAddPhotoClick = { draftId?.let { onNavigateToCamera(it) } },
         onDraftClick = {
             viewModel.saveDraft()
         },
@@ -507,25 +508,38 @@ private fun DraftingContent(
 
                 val photo = draft.photo
                 if (photo != null) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(responsive.photoHeroHeight)
-                            .clip(RoundedCornerShape(responsive.cardCornerRadius))
-                            .border(1.dp, OutlineVariantColor, RoundedCornerShape(responsive.cardCornerRadius))
-                            .background(SurfaceColor),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.Warning, contentDescription = null, tint = OnSurfaceVariantColor)
-                        coil.compose.AsyncImage(
-                            model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
-                                .data(photo.filePath)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = "Observation Photo",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(responsive.photoHeroHeight)
+                                .clip(RoundedCornerShape(responsive.cardCornerRadius))
+                                .border(1.dp, OutlineVariantColor, RoundedCornerShape(responsive.cardCornerRadius))
+                                .background(SurfaceColor),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Warning, contentDescription = null, tint = OnSurfaceVariantColor)
+                            coil.compose.AsyncImage(
+                                model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                                    .data(photo.filePath)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "Observation Photo",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        if (photo.originalSizeBytes != null && photo.compressedSizeBytes != null) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                val origSize = android.text.format.Formatter.formatShortFileSize(androidx.compose.ui.platform.LocalContext.current, photo.originalSizeBytes!!)
+                                val compSize = android.text.format.Formatter.formatShortFileSize(androidx.compose.ui.platform.LocalContext.current, photo.compressedSizeBytes!!)
+                                Text("Raw Size: $origSize", fontSize = (11 * fontScale).sp, color = OnSurfaceVariantColor)
+                                Text("Compressed: $compSize", fontSize = (11 * fontScale).sp, color = PrimaryColor, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
                     }
                 } else {
                     Box(
