@@ -37,6 +37,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.play.services.location)
 
     // Dagger Hilt
     implementation(libs.hilt.android)

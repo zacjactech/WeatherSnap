@@ -167,7 +167,8 @@ fun WeatherHomeScreen(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                CreateReportButton(onClick = onCreateReportClicked, responsive = responsive)
+                // CreateReportButton is removed as per the new flow
+                // CreateReportButton(onClick = onCreateReportClicked, responsive = responsive)
 
                 Spacer(modifier = Modifier.height(responsive.screenPadding))
             }

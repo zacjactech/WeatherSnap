@@ -3,6 +3,7 @@ package com.weather.feature.weather
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.weather.core.common.LocationProvider
 import com.weather.core.common.Result
 import com.weather.core.datastore.SettingsRepository
 import com.weather.core.domain.usecase.GetWeatherTelemetryUseCase
@@ -31,7 +32,8 @@ class WeatherViewModel @Inject constructor(
     private val searchCitiesUseCase: SearchCitiesUseCase,
     private val saveWeatherDraftUseCase: SaveWeatherDraftUseCase,
     private val settingsRepository: SettingsRepository,
-    private val savedStateHandle: SavedStateHandle
+    private val locationProvider: LocationProvider,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val latKey = "latitude"
@@ -40,8 +42,8 @@ class WeatherViewModel @Inject constructor(
     private val locationNameKey = "location_name"
     private val selectedTabKey = "selected_tab"
 
-    val currentLatitude = savedStateHandle.getStateFlow(latKey, 47.6062)
-    val currentLongitude = savedStateHandle.getStateFlow(lonKey, -122.3321)
+    val currentLatitude = savedStateHandle.getStateFlow(latKey, 0.0)
+    val currentLongitude = savedStateHandle.getStateFlow(lonKey, 0.0)
     val searchQuery = savedStateHandle.getStateFlow(queryKey, "")
     val locationName = savedStateHandle.getStateFlow(locationNameKey, "")
     val selectedTab = savedStateHandle.getStateFlow(selectedTabKey, 0)
@@ -63,6 +65,10 @@ class WeatherViewModel @Inject constructor(
         )
 
     private val _currentTelemetry = MutableStateFlow<com.weather.core.model.WeatherTelemetry?>(null)
+
+    init {
+        fetchCurrentLocation()
+    }
 
     /**
      * Combines lat and lon into a single atomic pair before calling the use case.
@@ -86,6 +92,7 @@ class WeatherViewModel @Inject constructor(
                         _currentTelemetry.value = result.data
                         WeatherUiState.Success(result.data, settings)
                     }
+
                     is Result.Error -> WeatherUiState.Error(
                         result.exception.message ?: "Failed to retrieve location weather telemetry."
                     )
@@ -132,5 +139,14 @@ class WeatherViewModel @Inject constructor(
 
     fun selectTab(index: Int) {
         savedStateHandle[selectedTabKey] = index
+    }
+
+    private fun fetchCurrentLocation() {
+        viewModelScope.launch {
+            locationProvider.fetchCurrentLocation().collect {
+                savedStateHandle[latKey] = it.latitude
+                savedStateHandle[lonKey] = it.longitude
+            }
+        }
     }
 }
