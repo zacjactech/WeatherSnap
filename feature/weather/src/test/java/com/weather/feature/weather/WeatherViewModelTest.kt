@@ -2,6 +2,7 @@ package com.weather.feature.weather
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import com.weather.core.common.LocationProvider
 import com.weather.core.common.Result
 import com.weather.core.domain.usecase.GetWeatherTelemetryUseCase
 import com.weather.core.domain.usecase.SearchCitiesUseCase
@@ -35,6 +36,7 @@ class WeatherViewModelTest {
     private lateinit var saveWeatherDraftUseCase: SaveWeatherDraftUseCase
     private lateinit var savedStateHandle: SavedStateHandle
     private lateinit var settingsRepository: SettingsRepository
+    private lateinit var locationProvider: LocationProvider
     private lateinit var viewModel: WeatherViewModel
     private val testDispatcher = StandardTestDispatcher()
 
@@ -44,18 +46,22 @@ class WeatherViewModelTest {
         getWeatherTelemetryUseCase = mockk()
         searchCitiesUseCase = mockk()
         saveWeatherDraftUseCase = mockk()
+        settingsRepository = mockk()
+        locationProvider = mockk()
         savedStateHandle = SavedStateHandle(mapOf(
             "latitude" to 47.6062,
             "longitude" to -122.3321
         ))
-        settingsRepository = mockk()
+        
         coEvery { settingsRepository.settingsFlow } returns flowOf(UserSettings())
+        coEvery { locationProvider.fetchCurrentLocation() } returns flowOf(com.weather.core.common.DeviceLocation(47.6062, -122.3321))
         
         viewModel = WeatherViewModel(
             getWeatherTelemetryUseCase,
             searchCitiesUseCase,
             saveWeatherDraftUseCase,
             settingsRepository,
+            locationProvider,
             savedStateHandle
         )
     }
