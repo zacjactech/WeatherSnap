@@ -8,6 +8,8 @@ import com.weather.core.domain.usecase.SearchCitiesUseCase
 import com.weather.core.domain.usecase.SaveWeatherDraftUseCase
 import com.weather.core.model.WeatherCondition
 import com.weather.core.model.WeatherTelemetry
+import com.weather.core.datastore.SettingsRepository
+import com.weather.core.model.UserSettings
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineDispatcher
@@ -32,6 +34,7 @@ class WeatherViewModelTest {
     private lateinit var searchCitiesUseCase: SearchCitiesUseCase
     private lateinit var saveWeatherDraftUseCase: SaveWeatherDraftUseCase
     private lateinit var savedStateHandle: SavedStateHandle
+    private lateinit var settingsRepository: SettingsRepository
     private lateinit var viewModel: WeatherViewModel
     private val testDispatcher = StandardTestDispatcher()
 
@@ -45,11 +48,14 @@ class WeatherViewModelTest {
             "latitude" to 47.6062,
             "longitude" to -122.3321
         ))
+        settingsRepository = mockk()
+        coEvery { settingsRepository.settingsFlow } returns flowOf(UserSettings())
         
         viewModel = WeatherViewModel(
             getWeatherTelemetryUseCase,
             searchCitiesUseCase,
             saveWeatherDraftUseCase,
+            settingsRepository,
             savedStateHandle
         )
     }
