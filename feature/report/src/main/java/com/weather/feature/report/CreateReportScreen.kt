@@ -446,13 +446,28 @@ fun CreateReportScreen(
                         .padding(paddingValues),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Warning, contentDescription = null, tint = WeatherSnapColors.Error, modifier = Modifier.size(responsive.avatarSize))
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(responsive.screenPadding * 2)
+                    ) {
+                        Icon(Icons.Default.LocationOff, contentDescription = null, tint = OnSurfaceVariantColor, modifier = Modifier.size(responsive.avatarSize * 1.5f))
                         Spacer(modifier = Modifier.height(responsive.itemSpacing))
-                        Text(uiState.message, color = WeatherSnapColors.Error)
-                        Spacer(modifier = Modifier.height(responsive.itemSpacing))
-                        Button(onClick = onTransmitClick) {
-                            Text("Retry")
+                        Text("No City Selected", fontSize = (20 * fontScale).sp, fontWeight = FontWeight.Bold, color = OnSurfaceColor)
+                        Spacer(modifier = Modifier.height(responsive.itemSpacing / 2))
+                        Text(
+                            uiState.message, 
+                            color = OnSurfaceVariantColor, 
+                            fontSize = (14 * fontScale).sp, 
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(responsive.itemSpacing * 2))
+                        Button(
+                            onClick = onNavigateBack,
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor),
+                            shape = RoundedCornerShape(responsive.buttonHeight / 2),
+                            modifier = Modifier.fillMaxWidth(0.8f).height(responsive.buttonHeight)
+                        ) {
+                            Text("Go to Search", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -484,7 +499,7 @@ private fun DraftingContent(
     responsive: ResponsiveValues,
     fontScale: Float
 ) {
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize().imePadding()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -630,7 +645,7 @@ private fun DraftingContent(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(responsive.detailHeroHeight * 0.67f)
+                            .heightIn(min = 150.dp, max = 250.dp)
                             .padding(responsive.cardPadding)
                     ) {
                         BasicTextField(
@@ -831,7 +846,7 @@ private fun TransmitButton(onClick: () -> Unit, modifier: Modifier = Modifier, r
         Icon(UploadIcon, contentDescription = null, modifier = Modifier.size(responsive.iconSize))
         Spacer(modifier = Modifier.width(responsive.itemSpacing / 4))
         Text(
-            "TRANSMIT REPORT",
+            "TRANSMIT",
             fontSize = (13 * fontScale).sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = (1 * fontScale).sp,
