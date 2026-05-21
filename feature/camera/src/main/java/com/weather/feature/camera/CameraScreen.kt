@@ -829,7 +829,7 @@ private fun PhotoConfirmOverlay(
                 }
                 Button(
                     onClick = onConfirmClick,
-                    modifier = Modifier.weight(2f).height(responsive.buttonHeight),
+                    modifier = Modifier.weight(1f).height(responsive.buttonHeight),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A90E2))
                 ) {
                     Icon(Icons.Default.Check, contentDescription = null)

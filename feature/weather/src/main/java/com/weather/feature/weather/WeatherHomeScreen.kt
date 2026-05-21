@@ -274,7 +274,7 @@ private fun HeroSection(
 
 @Composable
 private fun WeatherDisplay(telemetry: WeatherTelemetry, userSettings: UserSettings, locationName: String, fontScale: Float) {
-    val displayName = locationName.ifEmpty { "Seattle, WA" }
+    val displayName = locationName.ifEmpty { "Current Location" }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -302,7 +302,7 @@ private fun WeatherDisplay(telemetry: WeatherTelemetry, userSettings: UserSettin
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = locationName.ifEmpty { "Current Location" },
+                text = locationName.ifEmpty { "Local Area" },
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontSize = (15 * fontScale).sp,
                     fontWeight = FontWeight.Medium,

@@ -539,7 +539,8 @@ private fun DraftingContent(
                                 .height(responsive.photoHeroHeight)
                                 .clip(RoundedCornerShape(responsive.cardCornerRadius))
                                 .border(1.dp, OutlineVariantColor, RoundedCornerShape(responsive.cardCornerRadius))
-                                .background(SurfaceColor),
+                                .background(SurfaceColor)
+                                .clickable(onClick = onAddPhotoClick),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(Icons.Default.Warning, contentDescription = null, tint = OnSurfaceVariantColor)
