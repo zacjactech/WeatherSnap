@@ -35,6 +35,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:domain"))
     implementation(project(":core:designsystem"))
+    implementation(project(":core:file"))
 
     // Jetpack Compose
     implementation(platform(libs.compose.bom))

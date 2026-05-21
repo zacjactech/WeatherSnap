@@ -97,8 +97,6 @@ class ReportViewModel @Inject constructor(
         }
     }
 
-        }
-    }
 
     /**
      * Initializes a standard draft model bound to specific captured hardware telemetry indicators.
@@ -121,6 +119,10 @@ class ReportViewModel @Inject constructor(
             PhotoMetadata(
                 id = UUID.randomUUID().toString(),
                 filePath = it,
+                originalFilePath = null,
+                thumbnailFilePath = null,
+                originalSizeBytes = 0L,
+                compressedSizeBytes = 0L,
                 width = 1920,
                 height = 1080,
                 capturedAt = System.currentTimeMillis()

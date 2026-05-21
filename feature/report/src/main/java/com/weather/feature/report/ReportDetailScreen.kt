@@ -175,61 +175,7 @@ fun ReportDetailScreen(
             }
         }
 
-        // ── Sticky bottom action bar ────────────────────────────────────
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color.Transparent, WeatherSnapColors.Background.copy(alpha = 0.96f), WeatherSnapColors.Background)
-                    )
-                )
-                .navigationBarsPadding()
-                .padding(start = responsive.screenPadding, end = responsive.screenPadding, bottom = responsive.screenPadding + 24.dp, top = responsive.itemSpacing)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(responsive.gridGap)
-            ) {
-                Button(
-                    onClick = { /* Broadcast alert TODO */ },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(responsive.buttonHeight)
-                        .shadow(
-                            elevation = 16.dp,
-                            shape = RoundedCornerShape(responsive.cardCornerRadius / 1.5f),
-                            ambientColor = Color(0xFF4A90E2).copy(alpha = 0.5f),
-                            spotColor = Color(0xFF4A90E2).copy(alpha = 0.5f)
-                        ),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4A90E2),
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(responsive.cardCornerRadius / 1.5f)
-                ) {
-                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(responsive.iconSize * 0.9f))
-                    Spacer(modifier = Modifier.width(responsive.itemSpacing / 2))
-                    Text(
-                        "BROADCAST ALERT",
-                        fontSize = (13 * fontScale).sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = (0.5 * fontScale).sp
-                    )
-                }
-                IconButton(
-                    onClick = { /* Export TODO */ },
-                    modifier = Modifier
-                        .size(responsive.buttonHeight)
-                        .clip(RoundedCornerShape(responsive.cardCornerRadius / 1.5f))
-                        .background(WeatherSnapColors.SurfaceContainerHigh)
-                        .border(1.dp, OutlineVariantColor, RoundedCornerShape(responsive.cardCornerRadius / 1.5f))
-                ) {
-                    Icon(Icons.Default.BookmarkBorder, contentDescription = "Bookmark", tint = OnSurfaceColor)
-                }
-            }
-        }
+        // Empty space for sticky bottom action bar removed to eliminate dummy buttons
     }
 }
 
@@ -369,8 +315,8 @@ private fun DetailHeroSection(snap: WeatherSnap, responsive: ResponsiveValues, f
 @Composable
 private fun CoreTempCard(telemetry: WeatherTelemetry, responsive: ResponsiveValues, fontScale: Float) {
     val temp = telemetry.temperatureCelsius.toInt()
-    val high = temp + 2
-    val low = temp - 3
+    val high = telemetry.highTempCelsius?.toInt() ?: (temp + 2)
+    val low = telemetry.lowTempCelsius?.toInt() ?: (temp - 3)
 
     val cardBg = Color(0xFF1A243A)
     val cardBorder = Color(0xFF2A3652)
@@ -455,10 +401,11 @@ private fun WindCard(telemetry: WeatherTelemetry, modifier: Modifier = Modifier,
                 )
                 Text(" km/h", fontSize = (13 * fontScale).sp, color = OnSurfaceVariantColor, modifier = Modifier.padding(bottom = responsive.itemSpacing / 4))
             }
-            // Wind direction (compass placeholder — NW based on telemetry)
+            // Wind direction
+            val windDirection = telemetry.windDirectionDegrees?.let { degreesToCompass(it) } ?: "NW"
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 4)) {
                 Icon(Icons.Default.Explore, contentDescription = null, tint = PrimaryColor, modifier = Modifier.size(responsive.iconSize * 0.9f))
-                Text("NW", fontSize = (13 * fontScale).sp, color = PrimaryColor, fontWeight = FontWeight.SemiBold)
+                Text(windDirection, fontSize = (13 * fontScale).sp, color = PrimaryColor, fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -743,3 +690,9 @@ private fun formatDetailTimestamp(timestamp: Long): String {
 }
 
 private enum class Severity { ROUTINE, SEVERE, CRITICAL }
+
+private fun degreesToCompass(degrees: Double): String {
+    val directions = arrayOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+    val index = Math.round((degrees % 360) / 45.0).toInt() % 8
+    return directions[index]
+}

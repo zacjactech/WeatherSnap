@@ -50,7 +50,6 @@ fun SettingsRoute(
         onImageResolutionChange = viewModel::setImageResolution,
         onAutoSyncChange = viewModel::setAutoSyncEnabled,
         onGpsPrecisionModeChange = viewModel::setGpsPrecisionMode,
-        onSignOutClick = { /* TODO */ },
         onNavigateToHome = onNavigateToHome,
         onNavigateToCamera = onNavigateToCamera,
         onNavigateToReports = onNavigateToReports
@@ -69,7 +68,6 @@ fun SettingsScreen(
     onImageResolutionChange: (ImageResolution) -> Unit,
     onAutoSyncChange: (Boolean) -> Unit,
     onGpsPrecisionModeChange: (GpsPrecisionMode) -> Unit,
-    onSignOutClick: () -> Unit,
     onNavigateToHome: () -> Unit = {},
     onNavigateToCamera: () -> Unit = {},
     onNavigateToReports: () -> Unit = {}
@@ -203,22 +201,6 @@ fun SettingsScreen(
 
             // ACCOUNT & LEGAL
             SettingsSection(title = "ACCOUNT & LEGAL", responsive = responsive) {
-                SettingsActionItem(
-                    title = "Data Export (CSV/JSON)",
-                    icon = { Icon(Icons.Default.FileDownload, contentDescription = null, tint = OnSurfaceVariantColor, modifier = Modifier.size(responsive.iconSize)) },
-                    onClick = { /* TODO */ },
-                    responsive = responsive,
-                    fontScale = fontScale
-                )
-                SectionDivider()
-                SettingsActionItem(
-                    title = "Privacy Policy",
-                    icon = { Icon(Icons.Default.Security, contentDescription = null, tint = OnSurfaceVariantColor, modifier = Modifier.size(responsive.iconSize)) },
-                    onClick = { /* TODO */ },
-                    responsive = responsive,
-                    fontScale = fontScale
-                )
-                SectionDivider()
                 SettingsInfoItem(
                     title = "App Version",
                     value = "v2.4.1-field",
@@ -226,15 +208,6 @@ fun SettingsScreen(
                     responsive = responsive,
                     fontScale = fontScale
                 )
-                SectionDivider()
-                TextButton(
-                    onClick = onSignOutClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = responsive.itemSpacing / 2)
-                ) {
-                    Text("Sign Out", color = WeatherSnapColors.Tertiary, fontWeight = FontWeight.Medium, fontSize = (18 * fontScale).sp)
-                }
             }
             
             Spacer(modifier = Modifier.height(responsive.buttonHeight * 1.2f))
@@ -280,9 +253,6 @@ private fun UserProfileCard(responsive: ResponsiveValues, fontScale: Float) {
                         Text("Lead Meteorologist", fontSize = (13 * fontScale).sp, color = OnSurfaceVariantColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
-            }
-            IconButton(onClick = { /* TODO */ }) {
-                Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = OnSurfaceVariantColor, modifier = Modifier.size(responsive.iconSize))
             }
         }
     }

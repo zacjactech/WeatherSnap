@@ -484,7 +484,7 @@ private fun SnapPhotoHero(snap: WeatherSnap, severity: Severity, responsive: Res
     ) {
         val photoPath = snap.photo?.thumbnailFilePath ?: snap.photo?.filePath
 
-        // Atmospheric gradient placeholder based on condition
+        // Atmospheric gradient based on condition
         val gradientColors = conditionGradient(snap.telemetry?.condition ?: WeatherCondition.UNKNOWN)
         Box(
             modifier = Modifier

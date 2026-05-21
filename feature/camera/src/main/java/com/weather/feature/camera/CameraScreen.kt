@@ -395,24 +395,8 @@ private fun FullscreenCameraPreview(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // PANO mode shortcut
-                Column(
-                    modifier = Modifier
-                        .height(responsive.touchTargetMin * 1.3f)
-                        .clickable { /* Panorama mode TODO */ }
-                        .padding(top = responsive.itemSpacing),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        Icons.Default.Image,
-                        contentDescription = "Panorama",
-                        tint = Color.White,
-                        modifier = Modifier.size(responsive.iconSize * 1.6f)
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text("PANO", fontSize = (10 * fontScale).sp, color = Color.White, fontWeight = FontWeight.Medium, letterSpacing = 0.5.sp)
-                }
+                // Placeholder to keep shutter centered
+                Box(modifier = Modifier.size(responsive.touchTargetMin))
 
                 // Shutter button
                 ShutterButton(

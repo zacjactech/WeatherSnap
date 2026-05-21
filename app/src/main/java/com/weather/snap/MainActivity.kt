@@ -90,7 +90,7 @@ class MainActivity : ComponentActivity() {
                         composable("settings") {
                             SettingsRoute(
                                 onNavigateToHome = { navController.navigate("weather") },
-                                onNavigateToCamera = { navController.navigate("camera") },
+                                onNavigateToCamera = { navController.navigate("create_report") },
                                 onNavigateToReports = { navController.navigate("history") }
                             )
                         }

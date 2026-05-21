@@ -174,3 +174,11 @@ Run the following compile commands to verify the bootstrapped architecture:
 # Assemble debug APK for hardware tests
 ./gradlew assembleDebug
 ```
+
+---
+
+## 5. Production Hardening Notes
+*   **Offline Fidelity & Out of Scope Features**: Non-functional "Broadcast Alert" and "Data Export" buttons in the Report Detail screen were removed. The backend infrastructure for these features is currently unimplemented, and they are out of scope for the current offline-first field release.
+*   **Settings Screen Adjustments**: Disconnected UI actions such as "Edit Profile," "Data Export," "Privacy Policy," and "Sign Out" were removed from the Settings screen to eliminate dead-ends and prepare the app for final evaluation.
+*   **Camera Adjustments**: The unimplemented "Panorama Mode" shortcut in the Camera screen was removed and replaced with a layout-preserving spacer.
+
