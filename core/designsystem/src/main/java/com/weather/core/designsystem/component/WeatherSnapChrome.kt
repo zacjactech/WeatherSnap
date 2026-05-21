@@ -20,7 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
@@ -200,7 +200,7 @@ fun WeatherSnapBottomNav(
             WeatherSnapBottomNavItem(
                 tab = WeatherSnapTab.Reports,
                 selectedTab = selectedTab,
-                icon = Icons.Default.Assignment,
+                icon = Icons.AutoMirrored.Filled.Assignment,
                 label = "Reports",
                 onClick = onNavigateToReports,
                 iconSize = navIconSize,

@@ -43,7 +43,6 @@ private val StitchDarkColorScheme = darkColorScheme(
 
 @Composable
 fun WeatherSnapTheme(
-    darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
