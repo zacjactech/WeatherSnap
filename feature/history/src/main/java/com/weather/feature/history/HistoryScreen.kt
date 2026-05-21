@@ -1,261 +1,566 @@
 package com.weather.feature.history
 
+import android.graphics.BitmapFactory
 import androidx.compose.animation.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.weather.core.designsystem.component.WeatherSnapBottomNav
+import com.weather.core.designsystem.component.WeatherSnapTab
+import com.weather.core.designsystem.component.WeatherSnapTopBar
+import com.weather.core.designsystem.responsive.*
 import com.weather.core.designsystem.theme.*
 import com.weather.core.model.SyncStatus
+import com.weather.core.model.WeatherCondition
 import com.weather.core.model.WeatherSnap
 import java.text.SimpleDateFormat
 import java.util.*
 
+// Severity level derived from snap data
+private enum class Severity { ROUTINE, SEVERE, CRITICAL }
+
+private fun WeatherSnap.severity(): Severity {
+    val cond = telemetry?.condition ?: WeatherCondition.UNKNOWN
+    return when {
+        cond == WeatherCondition.THUNDERSTORM -> Severity.CRITICAL
+        cond == WeatherCondition.RAIN || cond == WeatherCondition.SNOW -> Severity.SEVERE
+        status == SyncStatus.FAILED -> Severity.SEVERE
+        else -> Severity.ROUTINE
+    }
+}
+
 @Composable
 fun HistoryRoute(
     viewModel: HistoryViewModel = hiltViewModel(),
-    onReportClick: (String) -> Unit
+    onReportClick: (String) -> Unit,
+    onCreateReportClick: () -> Unit = {},
+    onNavigateToHome: () -> Unit = {},
+    onNavigateToCamera: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     HistoryScreen(
         uiState = uiState,
         onReportClick = onReportClick,
-        onRefreshClick = viewModel::forceSync
+        onRefreshClick = viewModel::forceSync,
+        onCreateReportClick = onCreateReportClick,
+        onNavigateToHome = onNavigateToHome,
+        onNavigateToCamera = onNavigateToCamera,
+        onNavigateToSettings = onNavigateToSettings
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun HistoryScreen(
     uiState: HistoryUiState,
     onReportClick: (String) -> Unit,
-    onRefreshClick: () -> Unit
+    onRefreshClick: () -> Unit,
+    onCreateReportClick: () -> Unit = {},
+    onNavigateToHome: () -> Unit = {},
+    onNavigateToCamera: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {}
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val windowSizeClass = calculateWindowSizeClass(context as androidx.activity.ComponentActivity)
+    val responsive = calculateResponsiveValues(windowSizeClass)
+    val fontScale = when {
+        responsive.isExpanded -> 1.1f
+        responsive.isMedium -> 1.05f
+        else -> 1f
+    }
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Observation History", color = OnSurfaceColor) },
-                actions = {
-                    IconButton(onClick = onRefreshClick) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = OnSurfaceColor)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BackgroundColor
-                )
+            WeatherSnapTopBar(
+                title = "Reports",
+                responsive = responsive,
+                showOverflow = false
             )
         },
-        containerColor = BackgroundColor
+        bottomBar = {
+            WeatherSnapBottomNav(
+                selectedTab = WeatherSnapTab.Reports,
+                onNavigateToHome = onNavigateToHome,
+                onNavigateToCamera = onNavigateToCamera,
+                onNavigateToReports = {},
+                onNavigateToSettings = onNavigateToSettings,
+                responsive = responsive
+            )
+        },
+        containerColor = WeatherSnapColors.Background
     ) { paddingValues ->
         when (uiState) {
             is HistoryUiState.Loading -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
+                    modifier = Modifier.fillMaxSize().padding(paddingValues),
                     contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = PrimaryColor)
-                }
+                ) { CircularProgressIndicator(color = PrimaryColor) }
             }
             is HistoryUiState.Empty -> {
-                EmptyHistoryState(modifier = Modifier.padding(paddingValues))
+                EmptyHistoryState(modifier = Modifier.padding(paddingValues), responsive = responsive, fontScale = fontScale)
             }
             is HistoryUiState.Success -> {
-                HistoryList(
+                HistoryTimelineList(
                     snaps = uiState.snaps,
                     onReportClick = onReportClick,
-                    modifier = Modifier.padding(paddingValues)
+                    onCreateReportClick = onCreateReportClick,
+                    modifier = Modifier.padding(paddingValues),
+                    responsive = responsive,
+                    fontScale = fontScale
                 )
             }
             is HistoryUiState.Error -> {
-                ErrorHistoryState(
-                    message = uiState.message,
-                    modifier = Modifier.padding(paddingValues)
-                )
+                ErrorHistoryState(message = uiState.message, modifier = Modifier.padding(paddingValues), responsive = responsive)
             }
         }
     }
 }
 
 @Composable
-private fun EmptyHistoryState(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
+private fun EmptyHistoryState(modifier: Modifier = Modifier, responsive: ResponsiveValues, fontScale: Float) {
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(responsive.screenPadding * 2)) {
             Icon(
-                Icons.Default.List,
-                contentDescription = null,
-                tint = OnSurfaceVariantColor,
-                modifier = Modifier.size(64.dp)
+                Icons.Default.Info, contentDescription = null,
+                tint = OnSurfaceVariantColor, modifier = Modifier.size(responsive.avatarSize * 2)
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(responsive.itemSpacing))
+            Text("No Reports Yet", fontSize = (20 * fontScale).sp, fontWeight = FontWeight.SemiBold, color = OnSurfaceColor)
+            Spacer(modifier = Modifier.height(responsive.itemSpacing / 2))
             Text(
-                "No Reports Yet",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = OnSurfaceColor
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                "Create your first weather report to see it here",
-                fontSize = 14.sp,
-                color = OnSurfaceVariantColor
+                "Tap the + button to create your first weather observation report",
+                fontSize = (14 * fontScale).sp, color = OnSurfaceVariantColor,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
         }
     }
 }
 
 @Composable
-private fun ErrorHistoryState(
-    message: String,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                Icons.Default.Warning,
-                contentDescription = null,
-                tint = WeatherSnapColors.Error,
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                message,
-                color = WeatherSnapColors.Error,
-                modifier = Modifier.padding(horizontal = 32.dp)
-            )
+private fun ErrorHistoryState(message: String, modifier: Modifier = Modifier, responsive: ResponsiveValues) {
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(responsive.screenPadding * 2)) {
+            Icon(Icons.Default.Warning, contentDescription = null, tint = WeatherSnapColors.Error, modifier = Modifier.size(responsive.avatarSize * 1.5f))
+            Spacer(modifier = Modifier.height(responsive.itemSpacing))
+            Text(message, color = WeatherSnapColors.Error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
     }
 }
 
 @Composable
-private fun HistoryList(
+private fun HistoryTimelineList(
     snaps: List<WeatherSnap>,
     onReportClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    onCreateReportClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    responsive: ResponsiveValues,
+    fontScale: Float
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(start = responsive.screenPadding, end = responsive.screenPadding, top = responsive.itemSpacing / 2, bottom = responsive.buttonHeight * 2),
+        verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
-        items(snaps, key = { it.id }) { snap ->
-            HistoryItem(
+        // Section header
+        item {
+            Column(modifier = Modifier.padding(bottom = responsive.itemSpacing)) {
+                Text(
+                    "Saved Reports",
+                    fontSize = (18 * fontScale).sp,
+                    fontWeight = FontWeight.Bold,
+                    color = OnSurfaceColor
+                )
+                Text(
+                    "Observation archive for Sector 4.",
+                    fontSize = (14 * fontScale).sp,
+                    color = OnSurfaceVariantColor
+                )
+            }
+        }
+
+        itemsIndexed(snaps, key = { _, snap -> snap.id }) { index, snap ->
+            TimelineSnapCard(
                 snap = snap,
-                onClick = { onReportClick(snap.id) }
+                isLast = index == snaps.lastIndex,
+                onClick = { onReportClick(snap.id) },
+                responsive = responsive,
+                fontScale = fontScale
+            )
+        }
+
+        // Load older reports row
+        if (snaps.isNotEmpty()) {
+            item {
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = responsive.itemSpacing / 2, bottom = responsive.itemSpacing)
+                ) {
+                    val compact = maxWidth < 340.dp
+                    if (compact) {
+                        Column(verticalArrangement = Arrangement.spacedBy(responsive.gridGap)) {
+                            LoadOlderReportsButton(modifier = Modifier.fillMaxWidth(), responsive = responsive, fontScale = fontScale)
+                            CreateReportFab(onClick = onCreateReportClick, modifier = Modifier.align(Alignment.End), responsive = responsive)
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            LoadOlderReportsButton(responsive = responsive, fontScale = fontScale)
+                            CreateReportFab(onClick = onCreateReportClick, responsive = responsive)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadOlderReportsButton(modifier: Modifier = Modifier, responsive: ResponsiveValues, fontScale: Float) {
+    Surface(
+        modifier = modifier,
+        color = Color.Transparent,
+        border = androidx.compose.foundation.BorderStroke(1.dp, OutlineVariantColor),
+        shape = RoundedCornerShape(responsive.cardCornerRadius / 1.5f)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = responsive.cardPadding, vertical = responsive.itemSpacing / 2),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                "Load Older Reports",
+                fontSize = (14 * fontScale).sp,
+                color = OnSurfaceVariantColor,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.width(responsive.itemSpacing / 4))
+            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = OnSurfaceVariantColor, modifier = Modifier.size(responsive.iconSize))
+        }
+    }
+}
+
+@Composable
+private fun CreateReportFab(onClick: () -> Unit, modifier: Modifier = Modifier, responsive: ResponsiveValues) {
+    FloatingActionButton(
+        onClick = onClick,
+        containerColor = PrimaryColor,
+        contentColor = WeatherSnapColors.OnPrimary,
+        shape = CircleShape,
+        modifier = modifier.size(responsive.touchTargetMin * 1.08f)
+    ) {
+        Icon(Icons.Default.Add, contentDescription = "Create Report", modifier = Modifier.size(responsive.iconSize * 1.2f))
+    }
+}
+
+@Composable
+private fun TimelineSnapCard(
+    snap: WeatherSnap,
+    isLast: Boolean,
+    onClick: () -> Unit,
+    responsive: ResponsiveValues,
+    fontScale: Float
+) {
+    val severity = snap.severity()
+    val nodeColor = when (severity) {
+        Severity.CRITICAL -> WeatherSnapColors.Tertiary
+        Severity.SEVERE -> PrimaryColor
+        Severity.ROUTINE -> OutlineVariantColor
+    }
+    val nodeSize = responsive.avatarSize
+    val timelineWidth = responsive.avatarSize
+
+    Row(modifier = Modifier.fillMaxWidth()) {
+        // ── Timeline connector column ─────────────────────────────────────
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.width(timelineWidth)
+        ) {
+            // Node circle - outer ring with inner dot
+            Box(
+                modifier = Modifier
+                    .size(nodeSize)
+                    .clip(CircleShape)
+                    .background(WeatherSnapColors.SurfaceContainer)
+                    .border(2.dp, nodeColor, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(nodeSize / 2.5f)
+                        .clip(CircleShape)
+                        .background(nodeColor)
+                )
+            }
+            // Connecting line
+            if (!isLast) {
+                Box(
+                    modifier = Modifier
+                        .width(2.dp)
+                        .defaultMinSize(minHeight = responsive.itemSpacing)
+                        .weight(1f, fill = false)
+                        .height(responsive.itemSpacing * 2.5f)
+                        .background(OutlineVariantColor.copy(alpha = 0.4f))
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(responsive.itemSpacing / 2))
+
+        // ── Card ──────────────────────────────────────────────────────────
+        Column(modifier = Modifier.weight(1f).padding(bottom = responsive.itemSpacing)) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(responsive.cardCornerRadius))
+                    .clickable(onClick = onClick)
+                    .then(
+                        if (severity == Severity.CRITICAL)
+                            Modifier.shadow(
+                                elevation = 15.dp,
+                                shape = RoundedCornerShape(responsive.cardCornerRadius),
+                                ambientColor = WeatherSnapColors.Tertiary.copy(alpha = 0.1f),
+                                spotColor = WeatherSnapColors.Tertiary.copy(alpha = 0.1f)
+                            )
+                        else Modifier
+                    ),
+                color = WeatherSnapColors.SurfaceContainer,
+                shape = RoundedCornerShape(responsive.cardCornerRadius),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (severity == Severity.CRITICAL) WeatherSnapColors.Tertiary.copy(alpha = 0.5f)
+                    else OutlineVariantColor
+                )
+            ) {
+                Column {
+                    // Photo hero
+                    SnapPhotoHero(snap = snap, severity = severity, responsive = responsive, fontScale = fontScale)
+
+                    // Content
+                    Column(modifier = Modifier.padding(responsive.cardPadding)) {
+                        // Title
+                        val titleColor = if (severity == Severity.CRITICAL) WeatherSnapColors.Tertiary else OnSurfaceColor
+                        Text(
+                            text = buildCardTitle(snap),
+                            fontSize = (18 * fontScale).sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = titleColor,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        // Subtitle / notes preview
+                        if (snap.notes.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(responsive.itemSpacing / 4))
+                            Text(
+                                text = snap.notes,
+                                fontSize = (14 * fontScale).sp,
+                                color = OnSurfaceVariantColor,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SnapPhotoHero(snap: WeatherSnap, severity: Severity, responsive: ResponsiveValues, fontScale: Float) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(responsive.photoHeroHeight)
+            .clip(RoundedCornerShape(topStart = responsive.cardCornerRadius, topEnd = responsive.cardCornerRadius))
+    ) {
+        // Attempt to load photo, else show condition gradient placeholder
+        val photoPath = snap.photo?.filePath
+        val bitmap = remember(photoPath) {
+            photoPath?.let {
+                try { BitmapFactory.decodeFile(it)?.asImageBitmap() } catch (_: Exception) { null }
+            }
+        }
+
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap,
+                contentDescription = "Observation photo",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            // Atmospheric gradient placeholder based on condition
+            val gradientColors = conditionGradient(snap.telemetry?.condition ?: WeatherCondition.UNKNOWN)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(gradientColors))
+            )
+        }
+
+        // Dark scrim at bottom so chips/text are legible
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f))
+                    )
+                )
+        )
+
+        // Timestamp + severity chip overlay
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(responsive.cardPadding * 0.6f),
+            horizontalArrangement = Arrangement.spacedBy(responsive.gridGap / 2),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Date/time
+            Surface(
+                shape = RoundedCornerShape(999.dp),
+                color = Color.Black.copy(alpha = 0.6f)
+            ) {
+                Text(
+                    text = formatTimestamp(snap.capturedAt),
+                    fontSize = (11 * fontScale).sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = responsive.cardPadding / 2, vertical = responsive.itemSpacing / 4)
+                )
+            }
+            // Severity chip
+            SeverityChip(severity = severity, responsive = responsive, fontScale = fontScale)
+        }
+    }
+}
+
+@Composable
+private fun SeverityChip(severity: Severity, responsive: ResponsiveValues, fontScale: Float) {
+    val chipData = when (severity) {
+        Severity.CRITICAL -> ChipData(
+            bg = WeatherSnapColors.Tertiary.copy(alpha = 0.95f),
+            fg = WeatherSnapColors.OnTertiaryContainer,
+            label = "Critical",
+            icon = {
+                androidx.compose.foundation.Canvas(modifier = Modifier.size(responsive.iconSize * 0.5f)) {
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(size.width / 2, 0f)
+                        lineTo(size.width, size.height * 0.5f)
+                        lineTo(size.width / 2, size.height)
+                        lineTo(0f, size.height * 0.5f)
+                        close()
+                    }
+                    drawPath(path = path, color = WeatherSnapColors.OnTertiaryContainer)
+                }
+            }
+        )
+        Severity.SEVERE -> ChipData(
+            bg = Color(0xFF2D5673).copy(alpha = 0.95f),
+            fg = Color.White,
+            label = "Severe",
+            icon = {
+                androidx.compose.foundation.Canvas(modifier = Modifier.size(responsive.iconSize * 0.5f)) {
+                    drawCircle(color = Color.White, radius = size.width * 0.4f)
+                    drawCircle(color = WeatherSnapColors.PrimaryContainer.copy(alpha = 0.9f), radius = size.width * 0.2f)
+                }
+            }
+        )
+        Severity.ROUTINE -> ChipData(
+            bg = Color(0xFF2A3044).copy(alpha = 0.95f),
+            fg = OnSurfaceColor,
+            label = "Routine",
+            icon = {
+                androidx.compose.foundation.Canvas(modifier = Modifier.size(responsive.iconSize * 0.5f)) {
+                    drawCircle(color = OnSurfaceVariantColor.copy(alpha = 0.5f), radius = size.width * 0.35f, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5f))
+                }
+            }
+        )
+    }
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = chipData.bg,
+        border = if (severity == Severity.ROUTINE) androidx.compose.foundation.BorderStroke(1.dp, OutlineVariantColor.copy(alpha = 0.4f)) else null
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = responsive.cardPadding / 2, vertical = responsive.itemSpacing / 4),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(responsive.gridGap / 2)
+        ) {
+            chipData.icon()
+            Text(
+                text = chipData.label,
+                fontSize = (11 * fontScale).sp,
+                fontWeight = FontWeight.SemiBold,
+                color = chipData.fg
             )
         }
     }
 }
 
-@Composable
-private fun HistoryItem(
-    snap: WeatherSnap,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = SurfaceColor),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Star,
-                        contentDescription = null,
-                        tint = PrimaryColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        snap.telemetry?.condition?.name ?: "Unknown",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = OnSurfaceColor
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    formatTimestamp(snap.capturedAt),
-                    fontSize = 12.sp,
-                    color = OnSurfaceVariantColor
-                )
-                snap.notes.takeIf { it.isNotEmpty() }?.let { notes ->
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        notes,
-                        fontSize = 14.sp,
-                        color = OnSurfaceColor,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
+private data class ChipData(
+    val bg: Color,
+    val fg: Color,
+    val label: String,
+    val icon: @Composable () -> Unit
+)
 
-            SyncStatusBadge(status = snap.status)
-        }
-    }
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+private fun buildCardTitle(snap: WeatherSnap): String {
+    // Use first line of notes as title if available
+    val firstLine = snap.notes.lines().firstOrNull { it.isNotBlank() }
+    if (!firstLine.isNullOrBlank()) return firstLine
+    val cond = snap.telemetry?.condition ?: WeatherCondition.UNKNOWN
+    return "${cond.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }} Observation"
 }
 
-@Composable
-private fun SyncStatusBadge(status: SyncStatus) {
-    val (color, text) = when (status) {
-        SyncStatus.DRAFT -> OnSurfaceVariantColor to "Draft"
-        SyncStatus.SYNCING -> WeatherSnapColors.Tertiary to "Syncing"
-        SyncStatus.COMPLETED -> WeatherSnapColors.Primary to "Synced"
-        SyncStatus.FAILED -> WeatherSnapColors.Error to "Failed"
-    }
-
-    Surface(
-        color = color.copy(alpha = 0.2f),
-        shape = CircleShape
-    ) {
-        Text(
-            text = text,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = color,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-        )
-    }
+private fun conditionGradient(condition: WeatherCondition): List<Color> = when (condition) {
+    WeatherCondition.THUNDERSTORM -> listOf(Color(0xFF1a1040), Color(0xFF2d1b69))
+    WeatherCondition.RAIN -> listOf(Color(0xFF0d1b2a), Color(0xFF1b3a5c))
+    WeatherCondition.SNOW -> listOf(Color(0xFF1a2a3a), Color(0xFF2d4a6a))
+    WeatherCondition.CLOUDY -> listOf(Color(0xFF1e2433), Color(0xFF2d3548))
+    WeatherCondition.CLEAR -> listOf(Color(0xFF0d1b35), Color(0xFF1a3a6b))
+    WeatherCondition.FOG -> listOf(Color(0xFF1e2533), Color(0xFF2a3040))
+    WeatherCondition.WINDY -> listOf(Color(0xFF0f1a2a), Color(0xFF1a2d45))
+    else -> listOf(Color(0xFF161b2b), Color(0xFF1a1f30))
 }
 
 private fun formatTimestamp(timestamp: Long): String {
-    val sdf = SimpleDateFormat("MMM dd, yyyy 'at' HH:mm", Locale.getDefault())
+    val sdf = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
 }

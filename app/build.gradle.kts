@@ -62,6 +62,9 @@ dependencies {
     implementation("androidx.hilt:hilt-work:1.2.0")
     ksp("androidx.hilt:hilt-compiler:1.2.0")
 
+    // Splash Screen
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
     // Testing Support
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

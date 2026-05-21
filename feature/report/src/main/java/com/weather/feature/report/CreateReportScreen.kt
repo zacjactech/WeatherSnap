@@ -15,6 +15,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,11 +34,13 @@ import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.weather.core.designsystem.theme.*
+import com.weather.core.designsystem.responsive.*
 import com.weather.core.model.WeatherSnap
 import com.weather.core.model.WeatherTelemetry
 import java.text.SimpleDateFormat
@@ -344,7 +348,7 @@ fun CreateReportRoute(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun CreateReportScreen(
     uiState: ReportUiState,
@@ -355,6 +359,15 @@ fun CreateReportScreen(
     onNavigateBack: () -> Unit,
     onReportSaved: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val windowSizeClass = calculateWindowSizeClass(context as androidx.activity.ComponentActivity)
+    val responsive = calculateResponsiveValues(windowSizeClass)
+    val fontScale = when {
+        responsive.isExpanded -> 1.1f
+        responsive.isMedium -> 1.05f
+        else -> 1f
+    }
+
     LaunchedEffect(uiState) {
         if (uiState is ReportUiState.Success) {
             onReportSaved()
@@ -364,14 +377,19 @@ fun CreateReportScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Create Weather Report", color = OnSurfaceColor, fontWeight = FontWeight.Bold) },
+                title = { Text("New Report", color = PrimaryColor, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = OnSurfaceColor)
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = OnSurfaceColor)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { /* Sync status */ }) {
+                        Icon(Icons.Default.Sync, contentDescription = "Sync", tint = PrimaryColor)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = SurfaceLowColor
+                    containerColor = BackgroundColor
                 )
             )
         },
@@ -386,7 +404,9 @@ fun CreateReportScreen(
                     onAddPhotoClick = onAddPhotoClick,
                     onDraftClick = onDraftClick,
                     onTransmitClick = onTransmitClick,
-                    modifier = Modifier.padding(paddingValues)
+                    modifier = Modifier.padding(paddingValues),
+                    responsive = responsive,
+                    fontScale = fontScale
                 )
             }
             is ReportUiState.Submitting -> {
@@ -398,7 +418,7 @@ fun CreateReportScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(color = PrimaryColor)
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(responsive.itemSpacing))
                         Text("Persisting Report...", color = OnSurfaceVariantColor)
                     }
                 }
@@ -411,10 +431,10 @@ fun CreateReportScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Warning, contentDescription = null, tint = WeatherSnapColors.Error, modifier = Modifier.size(48.dp))
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = WeatherSnapColors.Error, modifier = Modifier.size(responsive.avatarSize))
+                        Spacer(modifier = Modifier.height(responsive.itemSpacing))
                         Text(uiState.message, color = WeatherSnapColors.Error)
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(responsive.itemSpacing))
                         Button(onClick = onTransmitClick) {
                             Text("Retry")
                         }
@@ -443,24 +463,26 @@ private fun DraftingContent(
     onAddPhotoClick: () -> Unit,
     onDraftClick: () -> Unit,
     onTransmitClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    responsive: ResponsiveValues,
+    fontScale: Float
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(start = responsive.screenPadding, end = responsive.screenPadding, top = responsive.screenPadding, bottom = responsive.buttonHeight * 2),
+            verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing)
         ) {
             // Weather Snapshot Card
             draft.telemetry?.let { telemetry ->
-                WeatherSnapshotCard(telemetry = telemetry, locationName = locationName)
+                WeatherSnapshotCard(telemetry = telemetry, locationName = locationName, responsive = responsive, fontScale = fontScale)
             }
 
             // Photo Capture Area / Media Section
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 2)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -469,14 +491,14 @@ private fun DraftingContent(
                 ) {
                     Text(
                         "OBSERVATION MEDIA",
-                        fontSize = 12.sp,
+                        fontSize = (12 * fontScale).sp,
                         fontWeight = FontWeight.Bold,
                         color = OnSurfaceVariantColor,
                         letterSpacing = 1.2.sp
                     )
                     Text(
                         if (draft.photo != null) "1/3 Attached" else "0/3 Attached",
-                        fontSize = 11.sp,
+                        fontSize = (11 * fontScale).sp,
                         color = PrimaryColor
                     )
                 }
@@ -486,9 +508,9 @@ private fun DraftingContent(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(192.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(1.dp, OutlineVariantColor, RoundedCornerShape(12.dp))
+                            .height(responsive.photoHeroHeight)
+                            .clip(RoundedCornerShape(responsive.cardCornerRadius))
+                            .border(1.dp, OutlineVariantColor, RoundedCornerShape(responsive.cardCornerRadius))
                             .background(SurfaceColor),
                         contentAlignment = Alignment.Center
                     ) {
@@ -514,8 +536,8 @@ private fun DraftingContent(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(192.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .height(responsive.photoHeroHeight)
+                            .clip(RoundedCornerShape(responsive.cardCornerRadius))
                             .drawBehind {
                                 val stroke = Stroke(
                                     width = 2f,
@@ -535,17 +557,17 @@ private fun DraftingContent(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(48.dp)
+                                    .size(responsive.avatarSize)
                                     .clip(CircleShape)
                                     .background(WeatherSnapColors.SurfaceContainerHigh),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(CameraIcon, contentDescription = null, tint = PrimaryColor, modifier = Modifier.size(24.dp))
+                                Icon(CameraIcon, contentDescription = null, tint = PrimaryColor, modifier = Modifier.size(responsive.iconSize))
                             }
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text("Tap to Capture", fontSize = 14.sp, color = OnSurfaceColor, fontWeight = FontWeight.Medium)
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text("or select from gallery", fontSize = 12.sp, color = OnSurfaceVariantColor)
+                            Spacer(modifier = Modifier.height(responsive.itemSpacing * 0.75f))
+                            Text("Tap to Capture", fontSize = (14 * fontScale).sp, color = OnSurfaceColor, fontWeight = FontWeight.Medium)
+                            Spacer(modifier = Modifier.height(responsive.itemSpacing / 4))
+                            Text("or select from gallery", fontSize = (12 * fontScale).sp, color = OnSurfaceVariantColor)
                         }
                     }
                 }
@@ -553,11 +575,11 @@ private fun DraftingContent(
 
             // Notes Input Section with auto-save bar
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 2)
             ) {
                 Text(
                     "FIELD NOTES",
-                    fontSize = 12.sp,
+                    fontSize = (12 * fontScale).sp,
                     fontWeight = FontWeight.Bold,
                     color = OnSurfaceVariantColor,
                     letterSpacing = 1.2.sp
@@ -568,19 +590,19 @@ private fun DraftingContent(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(responsive.cardCornerRadius))
                         .background(SurfaceColor)
                         .border(
                             width = 1.dp,
                             color = if (isNotesFocused) WeatherSnapColors.Secondary else OutlineVariantColor,
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(responsive.cardCornerRadius)
                         )
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(160.dp)
-                            .padding(16.dp)
+                            .height(responsive.detailHeroHeight * 0.67f)
+                            .padding(responsive.cardPadding)
                     ) {
                         BasicTextField(
                             value = draft.notes,
@@ -590,7 +612,7 @@ private fun DraftingContent(
                                 .onFocusChanged { isNotesFocused = it.isFocused },
                             textStyle = TextStyle(
                                 color = OnSurfaceColor,
-                                fontSize = 14.sp,
+                                fontSize = (14 * fontScale).sp,
                                 fontWeight = FontWeight.Normal
                             ),
                             decorationBox = { innerTextField ->
@@ -599,7 +621,7 @@ private fun DraftingContent(
                                         Text(
                                             text = "Describe specific atmospheric anomalies, ground conditions, or equipment status...",
                                             color = OnSurfaceVariantColor.copy(alpha = 0.5f),
-                                            fontSize = 14.sp
+                                            fontSize = (14 * fontScale).sp
                                         )
                                     }
                                     innerTextField()
@@ -613,28 +635,28 @@ private fun DraftingContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(WeatherSnapColors.SurfaceContainerHigh)
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                            .padding(horizontal = responsive.cardPadding, vertical = responsive.itemSpacing / 2),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(responsive.gridGap)) {
                             Icon(
                                 TagIcon,
                                 contentDescription = "Add tags",
                                 tint = OnSurfaceVariantColor,
-                                modifier = Modifier.size(18.dp).clickable { }
+                                modifier = Modifier.size(responsive.iconSize).clickable { }
                             )
                             Icon(
                                 MicIcon,
                                 contentDescription = "Voice memo",
                                 tint = OnSurfaceVariantColor,
-                                modifier = Modifier.size(18.dp).clickable { }
+                                modifier = Modifier.size(responsive.iconSize).clickable { }
                             )
                         }
                         Text(
                             "Auto-saving...",
                             color = OnSurfaceVariantColor,
-                            fontSize = 11.sp,
+                            fontSize = (11 * fontScale).sp,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -645,22 +667,22 @@ private fun DraftingContent(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, OutlineVariantColor, RoundedCornerShape(12.dp)),
-                colors = CardDefaults.cardColors(containerColor = SurfaceColor),
-                shape = RoundedCornerShape(12.dp)
+                    .border(1.dp, OutlineVariantColor, RoundedCornerShape(responsive.cardCornerRadius)),
+                colors = CardDefaults.cardColors(containerColor = SurfaceLowColor),
+                shape = RoundedCornerShape(responsive.cardCornerRadius)
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier.padding(responsive.cardPadding),
+                    verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 2)
                     ) {
-                        Icon(CodeIcon, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(16.dp))
+                        Icon(CodeIcon, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(responsive.iconSize))
                         Text(
                             "TELEMETRY DATA",
-                            fontSize = 12.sp,
+                            fontSize = (12 * fontScale).sp,
                             fontWeight = FontWeight.Bold,
                             color = OnSurfaceVariantColor,
                             letterSpacing = 1.2.sp
@@ -669,31 +691,46 @@ private fun DraftingContent(
 
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Elevation", fontSize = 11.sp, color = OnSurfaceVariantColor)
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text("1,440m", fontSize = 14.sp, color = OnSurfaceColor, fontWeight = FontWeight.Medium)
+                            Text("Elevation", fontSize = (11 * fontScale).sp, color = OnSurfaceVariantColor)
+                            Spacer(modifier = Modifier.height(responsive.itemSpacing / 4))
+                            Text(
+                                "${estimateDraftElevation(draft.telemetry)}m",
+                                fontSize = (14 * fontScale).sp,
+                                color = OnSurfaceColor,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Barometer", fontSize = 11.sp, color = OnSurfaceVariantColor)
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text("1012 hPa", fontSize = 14.sp, color = OnSurfaceColor, fontWeight = FontWeight.Medium)
+                            Text("Barometer", fontSize = (11 * fontScale).sp, color = OnSurfaceVariantColor)
+                            Spacer(modifier = Modifier.height(responsive.itemSpacing / 4))
+                            Text(
+                                "${draft.telemetry?.pressure?.toInt() ?: 1012} hPa",
+                                fontSize = (14 * fontScale).sp,
+                                color = OnSurfaceColor,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
                     }
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Coordinates", fontSize = 11.sp, color = OnSurfaceVariantColor)
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text("46.8523° N, 121.7603° W", fontSize = 14.sp, color = OnSurfaceColor, fontWeight = FontWeight.Medium)
+                            Text("Coordinates", fontSize = (11 * fontScale).sp, color = OnSurfaceVariantColor)
+                            Spacer(modifier = Modifier.height(responsive.itemSpacing / 4))
+                            Text(
+                                draft.telemetry?.let { formatDraftCoordinates(it) } ?: "46.8523° N, 121.7603° W",
+                                fontSize = (14 * fontScale).sp,
+                                color = OnSurfaceColor,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Network", fontSize = 11.sp, color = OnSurfaceVariantColor)
-                            Spacer(modifier = Modifier.height(2.dp))
+                            Text("Network", fontSize = (11 * fontScale).sp, color = OnSurfaceVariantColor)
+                            Spacer(modifier = Modifier.height(responsive.itemSpacing / 4))
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                horizontalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 4)
                             ) {
-                                Icon(WifiIcon, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(14.dp))
-                                Text("Satellite Link", fontSize = 14.sp, color = WeatherSnapColors.Secondary, fontWeight = FontWeight.Medium)
+                                Icon(WifiIcon, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size((responsive.iconSize * 0.8f)))
+                                Text("Satellite Link", fontSize = (14 * fontScale).sp, color = WeatherSnapColors.Secondary, fontWeight = FontWeight.Medium)
                             }
                         }
                     }
@@ -715,47 +752,20 @@ private fun DraftingContent(
                         )
                     )
                 )
-                .padding(16.dp)
+                .padding(responsive.screenPadding)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // DRAFT (flex-1)
-                Button(
-                    onClick = onDraftClick,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp)
-                        .border(1.dp, OutlineVariantColor, RoundedCornerShape(8.dp)),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = WeatherSnapColors.SurfaceContainerHigh,
-                        contentColor = OnSurfaceColor
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Icon(SaveIcon, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("DRAFT", fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            if (responsive.isCompact) {
+                Column(verticalArrangement = Arrangement.spacedBy(responsive.gridGap)) {
+                    DraftButton(onClick = onDraftClick, modifier = Modifier.fillMaxWidth(), responsive = responsive, fontScale = fontScale)
+                    TransmitButton(onClick = onTransmitClick, modifier = Modifier.fillMaxWidth(), responsive = responsive, fontScale = fontScale)
                 }
-
-                // TRANSMIT REPORT (flex-[2])
-                Button(
-                    onClick = onTransmitClick,
-                    modifier = Modifier
-                        .weight(2f)
-                        .height(52.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = WeatherSnapColors.PrimaryContainer,
-                        contentColor = WeatherSnapColors.Secondary
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(0.dp)
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(responsive.gridGap)
                 ) {
-                    Icon(UploadIcon, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("TRANSMIT REPORT", fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    DraftButton(onClick = onDraftClick, modifier = Modifier.weight(1f), responsive = responsive, fontScale = fontScale)
+                    TransmitButton(onClick = onTransmitClick, modifier = Modifier.weight(2f), responsive = responsive, fontScale = fontScale)
                 }
             }
         }
@@ -763,9 +773,56 @@ private fun DraftingContent(
 }
 
 @Composable
+private fun DraftButton(onClick: () -> Unit, modifier: Modifier = Modifier, responsive: ResponsiveValues, fontScale: Float) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .height(responsive.buttonHeight)
+            .border(1.dp, OutlineVariantColor, RoundedCornerShape(responsive.cardCornerRadius / 1.5f)),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = WeatherSnapColors.SurfaceContainerHighest,
+            contentColor = OnSurfaceColor
+        ),
+        shape = RoundedCornerShape(responsive.cardCornerRadius / 1.5f),
+        contentPadding = PaddingValues(horizontal = responsive.itemSpacing / 2)
+    ) {
+        Icon(SaveIcon, contentDescription = null, modifier = Modifier.size(responsive.iconSize))
+        Spacer(modifier = Modifier.width(responsive.itemSpacing / 4))
+        Text("DRAFT", fontSize = (13 * fontScale).sp, fontWeight = FontWeight.Bold, letterSpacing = (1 * fontScale).sp)
+    }
+}
+
+@Composable
+private fun TransmitButton(onClick: () -> Unit, modifier: Modifier = Modifier, responsive: ResponsiveValues, fontScale: Float) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(responsive.buttonHeight),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = WeatherSnapColors.PrimaryContainer,
+            contentColor = WeatherSnapColors.Secondary
+        ),
+        shape = RoundedCornerShape(responsive.cardCornerRadius / 1.5f),
+        contentPadding = PaddingValues(horizontal = responsive.itemSpacing / 2)
+    ) {
+        Icon(UploadIcon, contentDescription = null, modifier = Modifier.size(responsive.iconSize))
+        Spacer(modifier = Modifier.width(responsive.itemSpacing / 4))
+        Text(
+            "TRANSMIT REPORT",
+            fontSize = (13 * fontScale).sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (1 * fontScale).sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
 private fun WeatherSnapshotCard(
     telemetry: WeatherTelemetry,
-    locationName: String?
+    locationName: String?,
+    responsive: ResponsiveValues,
+    fontScale: Float
 ) {
     val timeString = remember {
         val sdf = SimpleDateFormat("HH:mm z", Locale.getDefault())
@@ -775,13 +832,13 @@ private fun WeatherSnapshotCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, OutlineVariantColor, RoundedCornerShape(12.dp)),
+            .border(1.dp, OutlineVariantColor, RoundedCornerShape(responsive.cardCornerRadius)),
         colors = CardDefaults.cardColors(containerColor = SurfaceColor),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(responsive.cardCornerRadius)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(responsive.cardPadding),
+            verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -790,99 +847,139 @@ private fun WeatherSnapshotCard(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 4)
                 ) {
-                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(responsive.iconSize * 0.8f))
                     Text(
                         "CURRENT CONDITIONS",
-                        fontSize = 11.sp,
+                        fontSize = (11 * fontScale).sp,
                         fontWeight = FontWeight.Bold,
                         color = OnSurfaceVariantColor,
-                        letterSpacing = 1.sp
+                        letterSpacing = (1 * fontScale).sp
                     )
                 }
                 Text(
                     timeString,
-                    fontSize = 11.sp,
+                    fontSize = (11 * fontScale).sp,
                     color = PrimaryColor,
                     fontWeight = FontWeight.Medium
                 )
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(
-                            "${telemetry.temperatureCelsius.toInt()}°",
-                            fontSize = 36.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = PrimaryColor
-                        )
-                        Text(
-                            "C",
-                            fontSize = 18.sp,
-                            color = OnSurfaceVariantColor.copy(alpha = 0.5f),
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(bottom = 6.dp)
-                        )
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val compact = maxWidth < 340.dp
+                if (compact) {
+                    Column(verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 2)) {
+                        SnapshotTemperatureBlock(telemetry = telemetry, locationName = locationName, responsive = responsive, fontScale = fontScale)
+                        SnapshotTelemetryChips(telemetry = telemetry, horizontalAlignment = Alignment.Start, responsive = responsive, fontScale = fontScale)
                     }
-                    Text(
-                        locationName ?: "Mt. Rainier Base Camp",
-                        fontSize = 14.sp,
-                        color = OnSurfaceColor,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    // Wind telemetry chip
+                } else {
                     Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50.dp))
-                            .background(WeatherSnapColors.SurfaceContainerHigh)
-                            .border(1.dp, OutlineVariantColor, RoundedCornerShape(50.dp))
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(WindIcon, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(14.dp))
-                        Text(
-                            "${telemetry.windSpeedKph.toInt()} km/h NW",
-                            fontSize = 11.sp,
-                            color = OnSurfaceColor,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-
-                    // Humidity telemetry chip
-                    telemetry.humidityPercentage?.let { humidity ->
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50.dp))
-                                .background(WeatherSnapColors.SurfaceContainerHigh)
-                                .border(1.dp, OutlineVariantColor, RoundedCornerShape(50.dp))
-                                .padding(horizontal = 10.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(DropletIcon, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size(14.dp))
-                            Text(
-                                "$humidity% RH",
-                                fontSize = 11.sp,
-                                color = OnSurfaceColor,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
+                        SnapshotTemperatureBlock(telemetry = telemetry, locationName = locationName, modifier = Modifier.weight(1f), responsive = responsive, fontScale = fontScale)
+                        SnapshotTelemetryChips(telemetry = telemetry, horizontalAlignment = Alignment.End, responsive = responsive, fontScale = fontScale)
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun SnapshotTemperatureBlock(
+    telemetry: WeatherTelemetry,
+    locationName: String?,
+    modifier: Modifier = Modifier,
+    responsive: ResponsiveValues,
+    fontScale: Float
+) {
+    Column(modifier = modifier) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                "${telemetry.temperatureCelsius.toInt()}°",
+                fontSize = (48 * fontScale).sp,
+                fontWeight = FontWeight.Bold,
+                color = PrimaryColor
+            )
+            Text(
+                "C",
+                fontSize = (20 * fontScale).sp,
+                color = OnSurfaceVariantColor.copy(alpha = 0.5f),
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(bottom = responsive.itemSpacing / 2)
+            )
+        }
+        Text(
+            locationName ?: "Mt. Rainier Base Camp",
+            fontSize = (14 * fontScale).sp,
+            color = OnSurfaceColor,
+            fontWeight = FontWeight.Medium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun SnapshotTelemetryChips(
+    telemetry: WeatherTelemetry,
+    horizontalAlignment: Alignment.Horizontal,
+    responsive: ResponsiveValues,
+    fontScale: Float
+) {
+    Column(
+        horizontalAlignment = horizontalAlignment,
+        verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing / 2)
+    ) {
+        SnapshotTelemetryChip(icon = { Icon(WindIcon, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size((14 * fontScale).dp)) }, responsive = responsive, fontScale = fontScale) {
+            Text("${telemetry.windSpeedKph.toInt()} km/h NW", fontSize = (11 * fontScale).sp, color = OnSurfaceColor, fontWeight = FontWeight.Medium)
+        }
+
+        telemetry.humidityPercentage?.let { humidity ->
+            SnapshotTelemetryChip(icon = { Icon(DropletIcon, contentDescription = null, tint = WeatherSnapColors.Secondary, modifier = Modifier.size((14 * fontScale).dp)) }, responsive = responsive, fontScale = fontScale) {
+                Text("$humidity% RH", fontSize = (11 * fontScale).sp, color = OnSurfaceColor, fontWeight = FontWeight.Medium)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SnapshotTelemetryChip(
+    icon: @Composable () -> Unit,
+    responsive: ResponsiveValues,
+    fontScale: Float,
+    content: @Composable () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50.dp))
+            .background(WeatherSnapColors.SurfaceContainerHigh)
+            .border(1.dp, OutlineVariantColor, RoundedCornerShape(50.dp))
+            .padding(horizontal = responsive.cardPadding / 2, vertical = responsive.itemSpacing / 4),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(responsive.gridGap / 2)
+    ) {
+        icon()
+        content()
+    }
+}
+
+private fun estimateDraftElevation(telemetry: WeatherTelemetry?): String {
+    val pressure = telemetry?.pressure ?: return "1,440"
+    val meters = ((1013.25 - pressure) * 8.5).toInt().coerceAtLeast(0)
+    return "%,d".format(meters)
+}
+
+private fun formatDraftCoordinates(telemetry: WeatherTelemetry): String {
+    val latHemisphere = if (telemetry.latitude >= 0) "N" else "S"
+    val lonHemisphere = if (telemetry.longitude >= 0) "E" else "W"
+    return "%.4f° %s, %.4f° %s".format(
+        kotlin.math.abs(telemetry.latitude),
+        latHemisphere,
+        kotlin.math.abs(telemetry.longitude),
+        lonHemisphere
+    )
 }

@@ -4,7 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.weather.core.common.DispatcherProvider
+import com.weather.core.domain.usecase.GetWeatherTelemetryDraftUseCase
 import com.weather.core.file.FileStorageManager
+import com.weather.core.model.WeatherTelemetry
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,12 +17,30 @@ import javax.inject.Inject
 @HiltViewModel
 class CameraViewModel @Inject constructor(
     private val fileStorageManager: FileStorageManager,
+    private val getWeatherTelemetryDraftUseCase: GetWeatherTelemetryDraftUseCase,
     private val dispatcherProvider: DispatcherProvider,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CameraUiState>(CameraUiState.Ready)
     val uiState: StateFlow<CameraUiState> = _uiState.asStateFlow()
+
+    private val _telemetry = MutableStateFlow<WeatherTelemetry?>(null)
+    val telemetry: StateFlow<WeatherTelemetry?> = _telemetry.asStateFlow()
+
+    private val _lastPhotoPath = MutableStateFlow<String?>(null)
+    val lastPhotoPath: StateFlow<String?> = _lastPhotoPath.asStateFlow()
+
+    init {
+        viewModelScope.launch(dispatcherProvider.io) {
+            try {
+                val pair = getWeatherTelemetryDraftUseCase()
+                _telemetry.value = pair?.first
+            } catch (_: Exception) {
+                // Telemetry is optional in camera; silently ignore
+            }
+        }
+    }
 
     /**
      * Spawns an asynchronous image compression task in the IO pool.
@@ -30,6 +50,7 @@ class CameraViewModel @Inject constructor(
             _uiState.value = CameraUiState.Capturing
             try {
                 val compressedFile = fileStorageManager.saveAndCompressPhoto(imageBytes)
+                _lastPhotoPath.value = compressedFile.absolutePath
                 _uiState.value = CameraUiState.Success(
                     filePath = compressedFile.absolutePath,
                     width = 1920,

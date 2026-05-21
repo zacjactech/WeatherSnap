@@ -3,6 +3,7 @@ package com.weather.snap
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -21,6 +22,7 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         setContent {
             WeatherSnapTheme {
@@ -66,12 +68,29 @@ class MainActivity : ComponentActivity() {
                         
                         composable("history") {
                             HistoryRoute(
-                                onReportClick = { /* Navigate to details */ }
+                                onReportClick = { snapId -> navController.navigate("report_detail/$snapId") },
+                                onCreateReportClick = { navController.navigate("create_report") },
+                                onNavigateToHome = { navController.navigate("weather") },
+                                onNavigateToCamera = { navController.navigate("camera") },
+                                onNavigateToSettings = { navController.navigate("settings") }
                             )
                         }
                         
+                        composable("report_detail/{snap_id}") { backStackEntry ->
+                            val snapId = backStackEntry.arguments?.getString("snap_id")
+                            if (snapId != null) {
+                                com.weather.feature.report.ReportDetailRoute(
+                                    onNavigateBack = { navController.popBackStack() }
+                                )
+                            }
+                        }
+                        
                         composable("settings") {
-                            SettingsRoute()
+                            SettingsRoute(
+                                onNavigateToHome = { navController.navigate("weather") },
+                                onNavigateToCamera = { navController.navigate("camera") },
+                                onNavigateToReports = { navController.navigate("history") }
+                            )
                         }
                     }
                 }

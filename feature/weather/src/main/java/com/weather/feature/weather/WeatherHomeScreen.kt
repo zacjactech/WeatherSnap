@@ -1,5 +1,6 @@
 package com.weather.feature.weather
 
+import androidx.activity.ComponentActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -17,16 +18,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate as modifierRotate
-import androidx.compose.ui.graphics.drawscope.rotate as drawScopeRotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.drawscope.rotate as drawScopeRotate
 import androidx.compose.ui.layout.ContentScale
-import coil.compose.AsyncImage
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -35,10 +38,15 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.weather.core.common.Result
+import com.weather.core.designsystem.component.WeatherSnapBottomNav
+import com.weather.core.designsystem.component.WeatherSnapTopBar
+import com.weather.core.designsystem.component.WeatherSnapTab
+import com.weather.core.designsystem.responsive.*
 import com.weather.core.designsystem.theme.*
 import com.weather.core.model.LocationSearchResult
-import com.weather.core.model.WeatherTelemetry
 import com.weather.core.model.WeatherCondition
+import com.weather.core.model.WeatherTelemetry
+import coil.compose.AsyncImage
 
 @Composable
 fun WeatherHomeRoute(
@@ -73,7 +81,7 @@ fun WeatherHomeRoute(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun WeatherHomeScreen(
     uiState: WeatherUiState,
@@ -89,49 +97,29 @@ fun WeatherHomeScreen(
     onNavigateToReports: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {}
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val windowSizeClass = calculateWindowSizeClass(context as ComponentActivity)
+    val responsive = calculateResponsiveValues(windowSizeClass)
+    val fontScale = when {
+        responsive.isExpanded -> 1.1f
+        responsive.isMedium -> 1.05f
+        else -> 1f
+    }
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "WeatherSnap",
-                        color = PrimaryColor,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { }) {
-                        Icon(Icons.Default.Search, contentDescription = "Search", tint = PrimaryColor)
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = { },
-                        modifier = Modifier.padding(end = 8.dp)
-                    ) {
-                        AsyncImage(
-                            model = "https://lh3.googleusercontent.com/aida-public/AB6AXuBd4X6xCdhz8cQhUzKkjXfHV4fHWzjzViMuonMvFEP9UtVs0O2sbnVeF6zv4CXiWtZS-9x8FPszNYz63A5oB7f0aOIq102liqwa9YmAblBIY2A_U4ovPzd2OiYnKbd08MOZq4tICsoBiPS8WNZG37KRKE6v9zw06jp5WfysYC7QvIZeVqNZzuNA8u57AOA4mEZpWj8YFpthRllR8RqIZqrn-HRpPyZqB7mWRGaGjWNP04cZU2HAss1wz1ruPLD3cuy7ioUwXi2xWeM",
-                            contentDescription = "Profile",
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .border(1.dp, OutlineVariantColor.copy(alpha = 0.4f), CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BackgroundColor.copy(alpha = 0.9f)
-                )
+            WeatherSnapTopBar(
+                responsive = responsive
             )
         },
         bottomBar = {
             WeatherSnapBottomNav(
-                selectedTab = selectedTab,
-                onTabSelected = onTabSelected,
+                selectedTab = WeatherSnapTab.entries[selectedTab],
+                onNavigateToHome = { onTabSelected(0) },
                 onNavigateToCamera = onNavigateToCamera,
                 onNavigateToReports = onNavigateToReports,
-                onNavigateToSettings = onNavigateToSettings
+                onNavigateToSettings = onNavigateToSettings,
+                responsive = responsive
             )
         },
         containerColor = BackgroundColor,
@@ -148,7 +136,9 @@ fun WeatherHomeScreen(
                 searchQuery = searchQuery,
                 searchResults = searchResults,
                 onSearchQueryChange = onSearchQueryChange,
-                onCitySelected = onCitySelected
+                onCitySelected = onCitySelected,
+                responsive = responsive,
+                fontScale = fontScale
             )
 
             AnimatedVisibility(
@@ -156,12 +146,16 @@ fun WeatherHomeScreen(
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
-                MetricsGrid(telemetry = (uiState as? WeatherUiState.Success)?.telemetry)
+                Box(modifier = Modifier.padding(horizontal = responsive.screenPadding, vertical = responsive.sectionSpacing)) {
+                    MetricsGrid(telemetry = (uiState as? WeatherUiState.Success)?.telemetry, responsive = responsive)
+                }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.weight(0.25f))
 
-            CreateReportButton(onClick = onCreateReportClicked)
+            CreateReportButton(onClick = onCreateReportClicked, responsive = responsive)
+
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
@@ -173,40 +167,47 @@ private fun HeroSection(
     searchQuery: String,
     searchResults: Result<List<LocationSearchResult>>,
     onSearchQueryChange: (String) -> Unit,
-    onCitySelected: (Double, Double, String) -> Unit
+    onCitySelected: (Double, Double, String) -> Unit,
+    responsive: ResponsiveValues,
+    fontScale: Float
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(345.dp),
+            .height(responsive.heroHeight * 1.35f),
         contentAlignment = Alignment.Center
     ) {
-        // Atmospheric forest backdrop
+        val animCondition = (uiState as? WeatherUiState.Success)?.telemetry?.condition ?: com.weather.core.model.WeatherCondition.CLEAR
+
         AsyncImage(
-            model = "https://lh3.googleusercontent.com/aida-public/AB6AXuDPHTAtVFXu7NJf1Y2CwY62nnk3vQAkIOVUuFkcHFVVX6zEjiO9gTyafsBRwFrNsJXVfY5N9YIG8spvFhHuWHUuJkIwHDIhDhOqhLnsflN-sLlWsuCr8vp3HIJiCjlTGUYQoMOVr3dTAjlArLFLriJqpGWFdZ9uTLL8CZZjyUxmftwVI7sbAXSyJWhEcMVS9JLXR9zu5CNkYWiK76cx4Gc4te3ItYPvpvZWt-_KtATvIIc3A5EtFJiSyo2DUH2N48T8l2VlBfIUnLY",
+            model = getBackgroundImageUrlForCondition(animCondition),
             contentDescription = null,
             modifier = Modifier.matchParentSize(),
             contentScale = ContentScale.Crop
         )
 
-        // Dark vignette gradient overlay
         Box(
             modifier = Modifier
                 .matchParentSize()
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            BackgroundColor.copy(alpha = 0.4f),
-                            BackgroundColor.copy(alpha = 0.1f),
-                            BackgroundColor.copy(alpha = 0.7f),
-                            BackgroundColor
+                            BackgroundColor.copy(alpha = 0.25f),
+                            BackgroundColor.copy(alpha = 0.45f),
+                            BackgroundColor.copy(alpha = 0.78f),
+                            BackgroundColor.copy(alpha = 0.95f)
                         )
                     )
                 )
         )
+        // Additional dark overlay to improve text legibility
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(Color.Black.copy(alpha = 0.55f))
+        )
 
         // Dynamic Weather Animation Background based on actual state condition
-        val animCondition = (uiState as? WeatherUiState.Success)?.telemetry?.condition ?: WeatherCondition.CLEAR
         WeatherAnimationBackground(
             condition = animCondition,
             modifier = Modifier.matchParentSize()
@@ -222,19 +223,19 @@ private fun HeroSection(
                         Icons.Default.Warning,
                         contentDescription = null,
                         tint = WeatherSnapColors.Error,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(responsive.avatarSize)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(responsive.itemSpacing / 2))
                     Text(
                         text = uiState.message,
                         color = WeatherSnapColors.Error,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 32.dp)
+                        modifier = Modifier.padding(horizontal = responsive.screenPadding * 2)
                     )
                 }
             }
             is WeatherUiState.Success -> {
-                WeatherDisplay(telemetry = uiState.telemetry, locationName = locationName)
+                WeatherDisplay(telemetry = uiState.telemetry, locationName = locationName, fontScale = fontScale)
             }
         }
 
@@ -245,25 +246,24 @@ private fun HeroSection(
             onCitySelected = onCitySelected,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = responsive.screenPadding, vertical = responsive.itemSpacing / 2)
         )
     }
 }
 
 @Composable
-private fun WeatherDisplay(telemetry: WeatherTelemetry, locationName: String) {
+private fun WeatherDisplay(telemetry: WeatherTelemetry, locationName: String, fontScale: Float) {
     val displayName = locationName.ifEmpty { "Seattle, WA" }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Location text with a subtle, premium crisp text shadow matching Stitch
         Text(
             text = displayName,
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize = 24.sp,
-                shadow = androidx.compose.ui.graphics.Shadow(
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = (15 * fontScale).sp,
+                shadow = Shadow(
                     color = Color.Black.copy(alpha = 0.6f),
                     offset = androidx.compose.ui.geometry.Offset(0f, 4f),
                     blurRadius = 10f
@@ -283,9 +283,9 @@ private fun WeatherDisplay(telemetry: WeatherTelemetry, locationName: String) {
             Text(
                 text = "Field Station 04",
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 14.sp,
+                    fontSize = (15 * fontScale).sp,
                     fontWeight = FontWeight.Medium,
-                    shadow = androidx.compose.ui.graphics.Shadow(
+                    shadow = Shadow(
                         color = Color.Black.copy(alpha = 0.5f),
                         offset = androidx.compose.ui.geometry.Offset(0f, 2f),
                         blurRadius = 4f
@@ -297,13 +297,13 @@ private fun WeatherDisplay(telemetry: WeatherTelemetry, locationName: String) {
         Spacer(modifier = Modifier.height(10.dp))
         Row(
             verticalAlignment = Alignment.Top,
-            modifier = Modifier.padding(start = 12.dp)
+            modifier = Modifier.padding(start = 10.dp)
         ) {
             Text(
                 text = "${telemetry.temperatureCelsius.toInt()}",
                 style = MaterialTheme.typography.displayLarge.copy(
-                    fontSize = 64.sp,
-                    shadow = androidx.compose.ui.graphics.Shadow(
+                    fontSize = (78 * fontScale).sp,
+                    shadow = Shadow(
                         color = Color.Black.copy(alpha = 0.6f),
                         offset = androidx.compose.ui.geometry.Offset(0f, 6f),
                         blurRadius = 12f
@@ -314,16 +314,16 @@ private fun WeatherDisplay(telemetry: WeatherTelemetry, locationName: String) {
             Text(
                 text = "°C",
                 style = MaterialTheme.typography.displayLarge.copy(
-                    fontSize = 20.sp,
+                    fontSize = (23 * fontScale).sp,
                     fontWeight = FontWeight.SemiBold,
-                    shadow = androidx.compose.ui.graphics.Shadow(
+                    shadow = Shadow(
                         color = Color.Black.copy(alpha = 0.5f),
                         offset = androidx.compose.ui.geometry.Offset(0f, 4f),
                         blurRadius = 8f
                     )
                 ),
                 color = PrimaryColor,
-                modifier = Modifier.padding(top = 8.dp, start = 2.dp)
+                modifier = Modifier.padding(top = 10.dp, start = 2.dp)
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -333,19 +333,15 @@ private fun WeatherDisplay(telemetry: WeatherTelemetry, locationName: String) {
         ) {
             Surface(
                 color = Color(0xCC25293A),
-                shape = RoundedCornerShape(24.dp),
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    Color(0xFF80D2E9).copy(alpha = 0.3f)
-                )
+                shape = RoundedCornerShape(6.dp)
             ) {
                 Text(
-                    text = telemetry.condition.name.replace("_", " ").uppercase(),
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp),
+                    text = homeConditionLabel(telemetry.condition),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
                     style = MaterialTheme.typography.labelMedium.copy(
-                        fontSize = 11.sp,
+                        fontSize = (12 * fontScale).sp,
                         fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.08.sp
+                        letterSpacing = 0.8.sp
                     ),
                     color = Color(0xFFB3EDFF)
                 )
@@ -357,9 +353,9 @@ private fun WeatherDisplay(telemetry: WeatherTelemetry, locationName: String) {
             Text(
                 text = "H: ${highTemp}° L: ${lowTemp}°",
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 13.sp,
+                    fontSize = (14 * fontScale).sp,
                     fontWeight = FontWeight.Medium,
-                    shadow = androidx.compose.ui.graphics.Shadow(
+                    shadow = Shadow(
                         color = Color.Black.copy(alpha = 0.5f),
                         offset = androidx.compose.ui.geometry.Offset(0f, 2f),
                         blurRadius = 4f
@@ -385,17 +381,41 @@ private fun SearchBarOverlay(
             onValueChange = onSearchQueryChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(SurfaceColor, RoundedCornerShape(8.dp)),
-            placeholder = { Text("Search observation point...", color = OutlineVariantColor) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = OutlineVariantColor) },
+                .background(SurfaceColor, RoundedCornerShape(4.dp)),
+            placeholder = {
+                Text(
+                    "Search location...",
+                    color = OutlineVariantColor,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 14.sp)
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = null,
+                    tint = OutlineVariantColor,
+                    modifier = Modifier.size(16.dp)
+                )
+            },
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = PrimaryColor,
-                unfocusedBorderColor = OutlineVariantColor.copy(alpha = 0.5f),
+                focusedBorderColor = PrimaryColor.copy(alpha = 0.6f),
+                unfocusedBorderColor = OutlineVariantColor.copy(alpha = 0.4f),
                 focusedTextColor = OnSurfaceColor,
-                unfocusedTextColor = OnSurfaceColor
+                unfocusedTextColor = OnSurfaceColor,
+                focusedContainerColor = SurfaceColor,
+                unfocusedContainerColor = SurfaceColor
             ),
+            textStyle = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
             singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            shape = RoundedCornerShape(4.dp)
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(2.dp)
+                .padding(horizontal = 2.dp)
+                .background(PrimaryColor.copy(alpha = 0.85f))
         )
 
         AnimatedVisibility(
@@ -428,7 +448,7 @@ private fun SearchBarOverlay(
 }
 
 @Composable
-private fun MetricsGrid(telemetry: WeatherTelemetry?) {
+private fun MetricsGrid(telemetry: WeatherTelemetry?, responsive: ResponsiveValues) {
     if (telemetry == null) return
 
     val visibilityVal = when (telemetry.condition) {
@@ -439,51 +459,95 @@ private fun MetricsGrid(telemetry: WeatherTelemetry?) {
         else -> "10.0"
     }
     
-    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) {
+    Column(modifier = Modifier.padding(top = responsive.itemSpacing, bottom = responsive.itemSpacing / 2)) {
         Text(
             text = "CURRENT OBSERVATION METRICS",
             style = MaterialTheme.typography.labelMedium,
             color = OnSurfaceVariantColor,
-            modifier = Modifier.padding(bottom = 12.dp)
+            modifier = Modifier.padding(bottom = responsive.itemSpacing)
         )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            MetricCard(
-                modifier = Modifier.weight(1f),
-                icon = { DropletIcon(tint = OnSurfaceVariantColor) },
-                title = "HUMIDITY",
-                value = "${telemetry.humidityPercentage ?: 94}%"
-            )
-            MetricCard(
-                modifier = Modifier.weight(1f),
-                icon = { WindIcon(tint = OnSurfaceVariantColor) },
-                title = "WIND",
-                value = "${telemetry.windSpeedKph.toInt()}",
-                unit = "km/h"
-            )
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            MetricCard(
-                modifier = Modifier.weight(1f),
-                icon = { PressureIcon(tint = OnSurfaceVariantColor) },
-                title = "PRESSURE",
-                value = "${telemetry.pressure?.toInt() ?: 1008}",
-                unit = "hPa"
-            )
-            MetricCard(
-                modifier = Modifier.weight(1f),
-                icon = { EyeIcon(tint = OnSurfaceVariantColor) },
-                title = "VISIBILITY",
-                value = visibilityVal,
-                unit = "km"
-            )
+        if (responsive.isCompact) {
+            Column(verticalArrangement = Arrangement.spacedBy(responsive.gridGap)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(responsive.gridGap)
+                ) {
+                    MetricCard(
+                        modifier = Modifier.weight(1f),
+                        icon = { DropletIcon(tint = OnSurfaceVariantColor) },
+                        title = "HUMIDITY",
+                        value = "${telemetry.humidityPercentage ?: 94}%",
+                        responsive = responsive
+                    )
+                    MetricCard(
+                        modifier = Modifier.weight(1f),
+                        icon = { WindIcon(tint = OnSurfaceVariantColor) },
+                        title = "WIND",
+                        value = "${telemetry.windSpeedKph.toInt()}",
+                        unit = "km/h NW",
+                        responsive = responsive
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(responsive.gridGap)
+                ) {
+                    MetricCard(
+                        modifier = Modifier.weight(1f),
+                        icon = { PressureIcon(tint = OnSurfaceVariantColor) },
+                        title = "PRESSURE",
+                        value = "${telemetry.pressure?.toInt() ?: 1008}",
+                        unit = "hPa",
+                        responsive = responsive
+                    )
+                    MetricCard(
+                        modifier = Modifier.weight(1f),
+                        icon = { EyeIcon(tint = OnSurfaceVariantColor) },
+                        title = "VISIBILITY",
+                        value = visibilityVal,
+                        unit = "km",
+                        responsive = responsive
+                    )
+                }
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(responsive.gridGap)
+            ) {
+                MetricCard(
+                    modifier = Modifier.weight(1f),
+                    icon = { DropletIcon(tint = OnSurfaceVariantColor) },
+                    title = "HUMIDITY",
+                    value = "${telemetry.humidityPercentage ?: 94}%",
+                    responsive = responsive
+                )
+                MetricCard(
+                    modifier = Modifier.weight(1f),
+                    icon = { WindIcon(tint = OnSurfaceVariantColor) },
+                    title = "WIND",
+                    value = "${telemetry.windSpeedKph.toInt()}",
+                    unit = "km/h NW",
+                    responsive = responsive
+                )
+                MetricCard(
+                    modifier = Modifier.weight(1f),
+                    icon = { PressureIcon(tint = OnSurfaceVariantColor) },
+                    title = "PRESSURE",
+                    value = "${telemetry.pressure?.toInt() ?: 1008}",
+                    unit = "hPa",
+                    responsive = responsive
+                )
+                MetricCard(
+                    modifier = Modifier.weight(1f),
+                    icon = { EyeIcon(tint = OnSurfaceVariantColor) },
+                    title = "VISIBILITY",
+                    value = visibilityVal,
+                    unit = "km",
+                    responsive = responsive
+                )
+            }
         }
     }
 }
@@ -575,29 +639,30 @@ fun CameraIcon(tint: Color, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun MetricCard(
+fun MetricCard(
     modifier: Modifier = Modifier,
     icon: @Composable () -> Unit,
     title: String,
     value: String,
-    unit: String = ""
+    unit: String = "",
+    responsive: ResponsiveValues
 ) {
     Column(
         modifier = modifier
-            .background(SurfaceColor, RoundedCornerShape(12.dp))
-            .border(1.dp, OutlineVariantColor, RoundedCornerShape(12.dp))
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .background(SurfaceColor, RoundedCornerShape(responsive.cardCornerRadius))
+            .border(1.dp, OutlineVariantColor, RoundedCornerShape(responsive.cardCornerRadius))
+            .padding(responsive.cardPadding),
+        verticalArrangement = Arrangement.spacedBy(responsive.itemSpacing)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             icon()
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(responsive.itemSpacing / 2))
             Text(text = title, style = MaterialTheme.typography.labelMedium, color = OnSurfaceVariantColor)
         }
         Row(verticalAlignment = Alignment.Bottom) {
-            Text(text = value, style = MaterialTheme.typography.headlineMedium, color = OnSurfaceColor)
+            Text(text = value, style = MaterialTheme.typography.headlineSmall, color = OnSurfaceColor)
             if (unit.isNotEmpty()) {
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(responsive.itemSpacing / 4))
                 Text(text = unit, style = MaterialTheme.typography.bodyMedium, color = OnSurfaceVariantColor)
             }
         }
@@ -605,112 +670,42 @@ private fun MetricCard(
 }
 
 @Composable
-private fun CreateReportButton(onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier
-            .padding(horizontal = 20.dp, vertical = 8.dp)
-            .fillMaxWidth()
-            .height(56.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF4A90E2),
-            contentColor = Color(0xFFF4F7FB)
-        ),
-        shape = RoundedCornerShape(28.dp)
-    ) {
-        Icon(Icons.Default.Edit, contentDescription = null)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            "CREATE WEATHER REPORT",
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-private fun WeatherSnapBottomNav(
-    selectedTab: Int,
-    onTabSelected: (Int) -> Unit,
-    onNavigateToCamera: () -> Unit,
-    onNavigateToReports: () -> Unit,
-    onNavigateToSettings: () -> Unit
-) {
-    Surface(
+private fun CreateReportButton(onClick: () -> Unit, responsive: ResponsiveValues) {
+    Box(
         modifier = Modifier.fillMaxWidth(),
-        color = SurfaceColor,
-        border = androidx.compose.foundation.BorderStroke(1.dp, OutlineVariantColor)
+        contentAlignment = Alignment.Center
     ) {
-        Row(
+        Button(
+            onClick = onClick,
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+                .widthIn(max = 280.dp)
+                .height(responsive.buttonHeight),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF4A90E2),
+                contentColor = Color(0xFFF4F7FB)
+            ),
+            shape = RoundedCornerShape(responsive.buttonHeight / 2)
         ) {
-            BottomNavItem(
-                icon = { Icon(Icons.Default.Home, contentDescription = "Home", tint = it) },
-                label = "Home",
-                isSelected = selectedTab == 0,
-                onClick = { onTabSelected(0) }
-            )
-            BottomNavItem(
-                icon = { CameraIcon(tint = it) },
-                label = "Camera",
-                isSelected = selectedTab == 1,
-                onClick = { 
-                    onTabSelected(1)
-                    onNavigateToCamera()
-                }
-            )
-            BottomNavItem(
-                icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Reports", tint = it) },
-                label = "Reports",
-                isSelected = selectedTab == 2,
-                onClick = { 
-                    onTabSelected(2)
-                    onNavigateToReports()
-                }
-            )
-            BottomNavItem(
-                icon = { Icon(Icons.Default.Settings, contentDescription = "Settings", tint = it) },
-                label = "Settings",
-                isSelected = selectedTab == 3,
-                onClick = { 
-                    onTabSelected(3)
-                    onNavigateToSettings()
-                }
+            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(responsive.iconSize))
+            Spacer(modifier = Modifier.width(responsive.itemSpacing / 2))
+            Text(
+                "CREATE REPORT",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold
             )
         }
     }
 }
 
-@Composable
-private fun BottomNavItem(
-    icon: @Composable (Color) -> Unit,
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val contentColor = if (isSelected) PrimaryColor else OnSurfaceVariantColor
-
-    Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        icon(contentColor)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium.copy(fontSize = 10.sp),
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-            color = contentColor
-        )
-    }
+private fun homeConditionLabel(condition: WeatherCondition): String = when (condition) {
+    WeatherCondition.RAIN -> "HEAVY RAIN"
+    WeatherCondition.THUNDERSTORM -> "SEVERE STORM"
+    WeatherCondition.CLOUDY -> "CLOUDY"
+    WeatherCondition.SNOW -> "SNOW"
+    WeatherCondition.FOG -> "FOG"
+    WeatherCondition.WINDY -> "WINDY"
+    WeatherCondition.CLEAR -> "CLEAR"
+    WeatherCondition.UNKNOWN -> "OBSERVED"
 }
 
 private fun Double.format(digits: Int) = "%.${digits}f".format(this)
@@ -919,5 +914,16 @@ fun WeatherAnimationBackground(condition: WeatherCondition, modifier: Modifier =
                 }
             }
         }
+    }
+}
+
+private fun getBackgroundImageUrlForCondition(condition: com.weather.core.model.WeatherCondition): String {
+    return when (condition) {
+        com.weather.core.model.WeatherCondition.CLEAR -> "https://images.unsplash.com/photo-1601297183305-6df142704ea2?auto=format&fit=crop&w=1200&q=80"
+        com.weather.core.model.WeatherCondition.CLOUDY -> "https://images.unsplash.com/photo-1445220499081-01f11a48c48a?auto=format&fit=crop&w=1200&q=80"
+        com.weather.core.model.WeatherCondition.RAIN -> "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=1200&q=80"
+        com.weather.core.model.WeatherCondition.SNOW -> "https://images.unsplash.com/photo-1491002052546-bf38f186af56?auto=format&fit=crop&w=1200&q=80"
+        com.weather.core.model.WeatherCondition.THUNDERSTORM -> "https://images.unsplash.com/photo-1605727216801-e27ce1d0ce3c?auto=format&fit=crop&w=1200&q=80"
+        else -> "https://images.unsplash.com/photo-1601297183305-6df142704ea2?auto=format&fit=crop&w=1200&q=80"
     }
 }

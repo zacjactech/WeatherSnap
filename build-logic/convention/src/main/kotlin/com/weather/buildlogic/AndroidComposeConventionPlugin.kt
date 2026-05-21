@@ -52,6 +52,7 @@ class AndroidComposeConventionPlugin : Plugin<Project> {
                 add("implementation", libs.findLibrary("compose.ui.tooling.preview").get())
                 add("debugImplementation", libs.findLibrary("compose.ui.tooling").get())
                 add("implementation", libs.findLibrary("compose.material3").get())
+                add("implementation", libs.findLibrary("compose.material3.window.size").get())
                 add("implementation", libs.findLibrary("androidx.activity.compose").get())
                 add("implementation", libs.findLibrary("androidx.lifecycle.viewmodel.compose").get())
                 add("implementation", libs.findLibrary("androidx.lifecycle.runtime.compose").get())
