@@ -100,13 +100,10 @@ fun HistoryScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("WeatherSnap", fontSize = (18 * fontScale).sp, fontWeight = FontWeight.Bold, color = PrimaryColor) },
-                navigationIcon = {
-                    // Search icon removed as it is not part of the required features
-                },
-                actions = {},
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = WeatherSnapColors.Background)
+            WeatherSnapTopBar(
+                title = "WeatherSnap",
+                showSearch = false,
+                responsive = responsive
             )
         },
         bottomBar = {

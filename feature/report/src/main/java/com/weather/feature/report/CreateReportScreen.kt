@@ -393,19 +393,18 @@ fun CreateReportScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("New Report", color = PrimaryColor, fontWeight = FontWeight.Bold) },
+            com.weather.core.designsystem.component.WeatherSnapTopBar(
+                title = "WeatherSnap",
+                showSearch = false,
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(
+                        onClick = onNavigateBack,
+                        modifier = Modifier.padding(start = (responsive.screenPadding) / 2)
+                    ) {
                         Icon(Icons.Default.Close, contentDescription = "Close", tint = OnSurfaceColor)
                     }
                 },
-                actions = {
-                    // Empty actions for cleaner UI
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                )
+                responsive = responsive
             )
         },
         containerColor = BackgroundColor

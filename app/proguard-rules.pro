@@ -40,9 +40,17 @@
 -keep class retrofit2.** { *; }
 -keepattributes Signature
 -keepattributes Exceptions
--keepclasseswithmembers interface * {
+
+# Retain service method parameters when optimizing
+-keepclassmembers,allowshrinking,allowobfuscation interface * {
     @retrofit2.http.* <methods>;
 }
+
+# Retain type parameter for Kotlin Continuation to prevent ClassCastException on ParameterizedType
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+
+# Keep our specific API interfaces to ensure no signatures are erased
+-keep interface com.weather.core.network.*Api { *; }
 
 # ----------------------------------------------------------------------------
 # Hilt / Dagger
@@ -87,7 +95,9 @@
 # ----------------------------------------------------------------------------
 # Gson uses generic type information stored in a class file when working with fields. Proguard
 # removes such information by default, so configure it to keep all of it.
--keepattributes Signature
+-keepattributes Signature,InnerClasses,EnclosingMethod
+-keep class com.google.gson.reflect.TypeToken { *; }
+-keep class * extends com.google.gson.reflect.TypeToken { *; }
 
 # For using GSON @Expose annotation
 -keepattributes *Annotation*

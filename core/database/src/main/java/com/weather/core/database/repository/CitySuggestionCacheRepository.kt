@@ -33,9 +33,8 @@ class CitySuggestionCacheRepository @Inject constructor(
             val cache = citySuggestionCacheDao.getCachedSuggestion(normalizedQuery)
             
             if (cache != null && !isCacheExpired(cache.cachedAt)) {
-                val type = object : TypeToken<List<LocationSearchResult>>() {}.type
-                val results = gson.fromJson<List<LocationSearchResult>>(cache.resultsJson, type)
-                Result.Success(results)
+                val resultsArray = gson.fromJson(cache.resultsJson, Array<LocationSearchResult>::class.java)
+                Result.Success(resultsArray.toList())
             } else {
                 Result.Error(Exception("Cache miss or expired"))
             }

@@ -173,6 +173,18 @@ private fun FullscreenCameraPreview(
     var flashEnabled by remember { mutableStateOf(false) }
     var zoomLevel by remember { mutableStateOf(0f) } // 0f=1x … 1f=3x
 
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            uri?.let {
+                val bytes = context.contentResolver.openInputStream(it)?.readBytes()
+                if (bytes != null) {
+                    onCaptureClick(bytes)
+                }
+            }
+        }
+    )
+
     Box(modifier = Modifier.fillMaxSize()) {
         // ── Camera Preview (full bleed) ──────────────────────────────────
         AndroidView(
@@ -211,16 +223,7 @@ private fun FullscreenCameraPreview(
 
         TechnicalGridOverlay(modifier = Modifier.matchParentSize())
 
-        // ── Title: Custom Camera ─────────────────────────────────────────
-        Text(
-            text = "Custom Camera",
-            fontSize = (16 * fontScale).sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = responsive.itemSpacing / 2)
-        )
+        // ── Removed Custom Camera Title ──────────────────────────────────
 
         // ── Top Bar: Close | GPS chip | Flash ────────────────────────────
         Row(
@@ -276,8 +279,7 @@ private fun FullscreenCameraPreview(
             IconButton(
                 onClick = {
                     flashEnabled = !flashEnabled
-                    cameraController.imageCaptureFlashMode =
-                        if (flashEnabled) ImageCapture.FLASH_MODE_ON else ImageCapture.FLASH_MODE_OFF
+                    cameraController.enableTorch(flashEnabled)
                 },
                 modifier = Modifier
                     .size(responsive.touchTargetMin)
@@ -446,7 +448,8 @@ private fun FullscreenCameraPreview(
                         .size(responsive.touchTargetMin)
                         .clip(RoundedCornerShape(8.dp))
                         .background(Color.White.copy(alpha = 0.12f))
-                        .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(8.dp)),
+                        .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                        .clickable { galleryLauncher.launch("image/*") },
                     contentAlignment = Alignment.Center
                 ) {
                     if (lastPhotoPath != null) {

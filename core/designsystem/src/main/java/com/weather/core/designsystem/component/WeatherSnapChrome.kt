@@ -72,6 +72,7 @@ fun WeatherSnapTopBar(
     onOverflowClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     action: (@Composable () -> Unit)? = null,
+    navigationIcon: (@Composable () -> Unit)? = null,
     responsive: ResponsiveValues? = null
 ) {
     val avatarSize = responsive?.avatarSize ?: 42.dp
@@ -94,7 +95,9 @@ fun WeatherSnapTopBar(
             )
         },
         navigationIcon = {
-            if (showSearch) {
+            if (navigationIcon != null) {
+                navigationIcon()
+            } else if (showSearch) {
                 IconButton(
                     onClick = onSearchClick,
                     modifier = Modifier.padding(start = (responsive?.screenPadding ?: 12.dp) / 2)
@@ -153,7 +156,7 @@ fun WeatherSnapBottomNav(
     responsive: ResponsiveValues? = null
 ) {
     val navPadding = responsive?.itemSpacing ?: 10.dp
-    val navIconSize = responsive?.iconSize ?: 20.dp
+    val navIconSize = responsive?.iconSize ?: 28.dp
     val navLabelSize = when {
         responsive?.isExpanded == true -> 15.sp
         responsive?.isMedium == true -> 14.sp
@@ -219,7 +222,7 @@ private fun WeatherSnapBottomNavItem(
     icon: ImageVector,
     label: String,
     onClick: () -> Unit,
-    iconSize: androidx.compose.ui.unit.Dp = 18.dp,
+    iconSize: androidx.compose.ui.unit.Dp = 28.dp,
     labelSize: androidx.compose.ui.unit.TextUnit = 10.sp,
     itemPadding: androidx.compose.ui.unit.Dp = 14.dp,
     cornerRadius: androidx.compose.ui.unit.Dp = 18.dp
