@@ -13,10 +13,6 @@ pus## ✨ Features
 - **View Saved Reports:** A dedicated screen to view and manage all your saved weather reports.
 - **Responsive UI:** A clean and modern UI that adapts to different screen sizes.
 
-## 🎬 Screen Recording
-
-*(This is a placeholder for the screen recording of the full app flow, as required by the assignment.)*
-
 ---
 
 ## 🛠️ Tech Stack & Architecture
