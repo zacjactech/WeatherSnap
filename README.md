@@ -2,7 +2,7 @@
 
 WeatherSnap is a polished, production-grade Android application built to search live weather for cities, create custom weather reports with captured photos, and save them locally. It strictly adheres to modern Android architecture principles and is built entirely with Jetpack Compose.
 
-## ✨ Features
+pus## ✨ Features
 
 - **Live Weather Search:** Instantly search for any city and get real-time weather data.
 - **City Suggestions:** Autocomplete suggestions for cities as you type.
